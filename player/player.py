@@ -76,9 +76,10 @@ class Player:
             
             # Create audio source with FFmpeg
             # FFmpeg will output PCM audio to stdout, discord.py handles the rest
+            # Note: Use stderr_before_options to suppress FFmpeg warnings
             audio_source = discord.FFmpegPCMAudio(
                 song.url,
-                before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -loglevel error",
                 options="-vn -c:a pcm_s16le -ar 48000 -ac 2"
             )
             
