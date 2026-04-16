@@ -11,17 +11,15 @@ from discord.ext import commands
 from bot.discord_bot import create_bot
 from bot.cogs.music_commands import setup as setup_music_commands
 from bot.cogs.autoplay_commands import setup as setup_autoplay_commands
+from bot.logger_config import setup_logging
 from player.searcher import Searcher
 from player.autoplay import AutoplayEngine
 from player.autocomplete import SearchAutocomplete
 from state.shared import set_bot, set_autoplay_engine, set_autocomplete_engine
 from api.server import create_app
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging with enhanced formatter
+setup_logging(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
