@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyMusic - Discord Music Bot Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🌌</span>
+                    <span class="logo-text">SkyMusic</span>
+                </div>
+                <div class="status-badge">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Now Playing Card -->
+            <section class="card now-playing-card">
+                <div class="card-title">🎧 Now Playing</div>
+                
+                <div class="now-playing-content">
+                    <div class="album-art-container">
+                        <img id="albumArt" class="album-art" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect fill='%231e293b' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48' fill='%23475569'%3E🎵%3C/text%3E%3C/svg%3E" alt="Album Art">
+                        <div class="live-indicator hidden" id="liveIndicator">
+                            <span class="live-dot"></span> LIVE
+                        </div>
+                    </div>
+
+                    <div class="song-info">
+                        <div class="song-title" id="songTitle">No song playing</div>
+                        <div class="song-artist" id="songArtist">Waiting for /play command...</div>
+                        
+                        <div class="song-meta">
+                            <span class="meta-label">Requested by:</span>
+                            <span class="meta-value" id="requester">-</span>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span id="duration">0:00</span>
+                            </div>
+                        </div>
+
+                        <div class="queue-info">
+                            <span id="queueCount">0</span> songs remaining in queue
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="controls-section">
+                    <div class="controls">
+                        <button class="control-btn primary" id="pauseBtn" title="Pause">
+                            <span class="btn-icon">⏸️</span>
+                        </button>
+                        <button class="control-btn primary" id="skipBtn" title="Skip">
+                            <span class="btn-icon">⏭️</span>
+                        </button>
+                        <button class="control-btn danger" id="stopBtn" title="Stop">
+                            <span class="btn-icon">⏹️</span>
+                        </button>
+                    </div>
+
+                    <!-- Volume Control -->
+                    <div class="control-group">
+                        <label for="volumeSlider">🔊 Volume:</label>
+                        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="100">
+                        <span class="volume-display" id="volumeDisplay">100%</span>
+                    </div>
+
+                    <!-- Secondary Controls -->
+                    <div class="secondary-controls">
+                        <button class="control-btn" id="loopBtn" title="Loop Off">
+                            <span class="btn-icon">⤴️</span>
+                        </button>
+                        <button class="control-btn" id="shuffleBtn" title="Shuffle">
+                            <span class="btn-icon">🔀</span>
+                        </button>
+                        <button class="control-btn" id="likeBtn" title="Like">
+                            <span class="btn-icon">🤍</span>
+                        </button>
+                        <button class="control-btn" id="autoplayBtn" title="Autoplay">
+                            <span class="btn-icon">🎵</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Queue Card -->
+            <section class="card queue-card">
+                <div class="card-header">
+                    <div class="card-title">📋 Queue</div>
+                    <button class="btn-small danger" id="clearQueueBtn" title="Clear queue">Clear</button>
+                </div>
+                
+                <div class="queue-list" id="queueList">
+                    <div class="queue-empty">Queue is empty. Use /play to add songs!</div>
+                </div>
+
+                <div class="queue-footer" id="queueFooter" style="display: none;">
+                    <span class="queue-total" id="queueTotal">0</span> songs in queue
+                </div>
+            </section>
+
+            <!-- Stats Card -->
+            <section class="card stats-card" id="botStatsCard">
+                <div class="card-title">📊 Bot Statistics</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">⏱️ Uptime</div>
+                        <div class="stat-value" id="uptime">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🖥️ Servers</div>
+                        <div class="stat-value" id="totalServers">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">👥 Users</div>
+                        <div class="stat-value" id="totalUsers">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🎵 Playing</div>
+                        <div class="stat-value" id="playingNow">-</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>🌌 Powered by SkyMusic • Discord Music Bot V6</p>
+        </footer>
+    </div>
+
+    <!-- Scripts (modular) -->
+    <script src="/js/storage.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

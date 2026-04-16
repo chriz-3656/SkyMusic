@@ -1,0 +1,564 @@
+import logging
+import asyncio
+from typing import List
+import discord
+from discord.ext import commands
+from discord import app_commands
+from discord.ui import View, Button, button
+
+from player.player import Player
+from player.searcher import Searcher
+from player.autocomplete import SearchAutocomplete
+from state.shared import get_player, create_player, remove_player, get_autocomplete_engine, set_autocomplete_engine
+from bot.utils.embeds import (
+    create_now_playing_embed,
+    create_song_added_embed,
+    create_queue_embed,
+    create_error_embed,
+    create_info_embed,
+    format_duration
+)
+
+logger = logging.getLogger(__name__)
+
+
+class MusicCommands(commands.Cog):
+    """Music playback commands."""
+    
+    def __init__(self, bot: commands.Bot, searcher: Searcher, autocomplete: SearchAutocomplete = None):
+        self.bot = bot
+        self.searcher = searcher
+        self.autocomplete = autocomplete or get_autocomplete_engine()
+        
+        # V5: Create autocomplete if not provided
+        if not self.autocomplete:
+            self.autocomplete = SearchAutocomplete(searcher)
+            set_autocomplete_engine(self.autocomplete)
+    
+    async def _get_player(self, guild_id: int, voice_channel: discord.VoiceChannel) -> Player:
+        """Get or create player for guild."""
+        player = get_player(guild_id)
+        if not player:
+            player = create_player(guild_id, self.searcher)
+            await player.connect(voice_channel)
+        return player
+    
+    async def play_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ) -> List[app_commands.Choice[str]]:
+        """
+        Autocomplete suggestions for /play command.
+        V5: Real-time song suggestions as user types.
+        
+        Args:
+            interaction: Discord interaction
+            current: Current input text
+        
+        Returns:
+            List of autocomplete choices
+        """
+        try:
+            # Get suggestions from autocomplete engine
+            suggestions = await self.autocomplete.get_suggestions(
+                current,
+                limit=5,
+                timeout=1.5
+            )
+            
+            # If no suggestions, return empty list
+            if not suggestions:
+                return []
+            
+            # Format suggestions and return as Discord choices
+            choices = [
+                app_commands.Choice(
+                    name=self.autocomplete.format_suggestion(song),
+                    value=song.title  # Use title as value for selection
+                )
+                for song in suggestions
+            ]
+            
+            return choices
+            
+        except Exception as e:
+            logger.error(f"Autocomplete error: {e}")
+            return []
+    
+    @app_commands.command(name="play", description="Play a song or playlist from YouTube Music")
+    @app_commands.describe(query="Song title, artist, YouTube Music link, or playlist URL")
+    @app_commands.autocomplete(query=play_autocomplete)
+    async def play(self, interaction: discord.Interaction, query: str):
+        """Play a song or load a playlist."""
+        await interaction.response.defer()
+        
+        try:
+            # Get guild and member to check voice state
+            guild = interaction.guild
+            member = guild.get_member(interaction.user.id) if guild else None
+            
+            if not member or not member.voice or not member.voice.channel:
+                embed = create_error_embed(
+                    "Not in Voice Channel",
+                    "You must be in a voice channel to use this command!"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            voice_channel = member.voice.channel
+            guild_id = interaction.guild_id
+            
+            # Get or create player
+            player = await self._get_player(guild_id, voice_channel)
+            
+            # Check if query is a playlist
+            from player.playlist import PlaylistParser
+            
+            if PlaylistParser.is_playlist_url(query):
+                # Handle playlist
+                await self._handle_playlist(interaction, player, query)
+            else:
+                # Handle single song (existing logic)
+                song = await player.add_to_queue(query, str(interaction.user))
+                
+                if song:
+                    # Create embed for added song
+                    embed = create_song_added_embed(
+                        title=song.title,
+                        artist=song.artist,
+                        duration=song.duration,
+                        requester=str(interaction.user),
+                        position=len(player.queue.songs),
+                        thumbnail=getattr(song, 'thumbnail', None)
+                    )
+                    
+                    # Create control buttons
+                    view = NowPlayingView(player, self.bot)
+                    await interaction.followup.send(embed=embed, view=view)
+                else:
+                    embed = create_error_embed(
+                        "Song Not Found",
+                        f"Could not find song: {query}"
+                    )
+                    await interaction.followup.send(embed=embed)
+        
+        except Exception as e:
+            logger.error(f"Play command error: {e}", exc_info=True)
+            embed = create_error_embed(
+                "Playback Error",
+                str(e)[:200]
+            )
+            await interaction.followup.send(embed=embed)
+    
+    async def _handle_playlist(self, interaction: discord.Interaction, player, playlist_url: str):
+        """Handle playlist loading."""
+        try:
+            from player.playlist import PlaylistParser
+            
+            # Extract playlist ID
+            playlist_id = PlaylistParser.extract_playlist_id(playlist_url)
+            if not playlist_id:
+                embed = create_error_embed(
+                    "Invalid Playlist URL",
+                    "Could not extract playlist ID from URL"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            # Create parser and fetch playlist
+            parser = PlaylistParser(self.searcher.ytmusic)
+            
+            # Show loading message
+            loading_embed = discord.Embed(
+                title="📚 Loading Playlist",
+                description="Fetching playlist information...",
+                color=0x7C3AED
+            )
+            await interaction.followup.send(embed=loading_embed)
+            
+            # Get playlist info
+            playlist_info = await parser.get_playlist_info(playlist_id)
+            if not playlist_info:
+                embed = create_error_embed(
+                    "Playlist Not Found",
+                    "Could not load this playlist. It may be private or removed."
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            # Get all songs
+            songs = await parser.get_playlist_songs(playlist_id, limit=200)
+            if not songs:
+                embed = create_error_embed(
+                    "No Songs Found",
+                    "This playlist has no playable songs"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            # Add all songs to queue
+            added_count = 0
+            for song in songs:
+                song.requester = str(interaction.user)  # Set requester
+                player.queue.add(song)
+                added_count += 1
+            
+            # Create playlist loaded embed
+            embed = discord.Embed(
+                title="📚 Playlist Loaded",
+                description=f"**{playlist_info['title']}**",
+                color=0x7C3AED
+            )
+            
+            embed.add_field(
+                name="Songs Added",
+                value=f"{added_count} songs queued",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="Queue Length",
+                value=f"{len(player.queue.songs)} total songs",
+                inline=True
+            )
+            
+            if playlist_info.get('author'):
+                embed.add_field(
+                    name="Creator",
+                    value=playlist_info['author'],
+                    inline=False
+                )
+            
+            embed.set_footer(text="🌌 Powered by SkyMusic • Use /play or /c to control")
+            
+            await interaction.followup.send(embed=embed)
+            
+        except Exception as e:
+            logger.error(f"Playlist handling error: {e}", exc_info=True)
+            embed = create_error_embed(
+                "Playlist Error",
+                f"Failed to load playlist: {str(e)[:100]}"
+            )
+            await interaction.followup.send(embed=embed)
+    
+    @app_commands.command(name="pause", description="Pause playback")
+    async def pause(self, interaction: discord.Interaction):
+        """Pause playback."""
+        await interaction.response.defer()
+        
+        try:
+            player = get_player(interaction.guild_id)
+            if not player or not player.is_playing:
+                embed = create_error_embed(
+                    "Nothing Playing",
+                    "There is nothing currently playing!"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            if player.pause():
+                if player.current_song:
+                    embed = create_info_embed(
+                        "Playback Paused",
+                        f"Paused: **{player.current_song.title}** by {player.current_song.artist}"
+                    )
+                else:
+                    embed = create_info_embed("Playback Paused", "Playback has been paused")
+                
+                view = NowPlayingView(player, self.bot)
+                await interaction.followup.send(embed=embed, view=view)
+            else:
+                embed = create_error_embed(
+                    "Pause Failed",
+                    "Could not pause playback"
+                )
+                await interaction.followup.send(embed=embed)
+        
+        except Exception as e:
+            logger.error(f"Pause command error: {e}")
+            embed = create_error_embed("Pause Error", str(e)[:200])
+            await interaction.followup.send(embed=embed)
+    
+    @app_commands.command(name="resume", description="Resume playback")
+    async def resume(self, interaction: discord.Interaction):
+        """Resume playback."""
+        await interaction.response.defer()
+        
+        try:
+            player = get_player(interaction.guild_id)
+            if not player or not player.is_paused:
+                embed = create_error_embed(
+                    "Nothing Paused",
+                    "There is nothing currently paused!"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            if player.resume():
+                if player.current_song:
+                    embed = create_info_embed(
+                        "Playback Resumed",
+                        f"Playing: **{player.current_song.title}** by {player.current_song.artist}"
+                    )
+                else:
+                    embed = create_info_embed("Playback Resumed", "Playback has been resumed")
+                
+                view = NowPlayingView(player, self.bot)
+                await interaction.followup.send(embed=embed, view=view)
+            else:
+                embed = create_error_embed(
+                    "Resume Failed",
+                    "Could not resume playback"
+                )
+                await interaction.followup.send(embed=embed)
+        
+        except Exception as e:
+            logger.error(f"Resume command error: {e}")
+            embed = create_error_embed("Resume Error", str(e)[:200])
+            await interaction.followup.send(embed=embed)
+    
+    @app_commands.command(name="skip", description="Skip to next song")
+    async def skip(self, interaction: discord.Interaction):
+        """Skip current song."""
+        await interaction.response.defer()
+        
+        try:
+            player = get_player(interaction.guild_id)
+            if not player or not player.is_playing:
+                embed = create_error_embed(
+                    "Nothing Playing",
+                    "There is nothing currently playing to skip!"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            next_song = await player.skip()
+            if next_song:
+                embed = create_info_embed(
+                    "Skipped",
+                    f"Now playing: **{next_song.title}** by {next_song.artist}"
+                )
+                view = NowPlayingView(player, self.bot)
+                await interaction.followup.send(embed=embed, view=view)
+            else:
+                embed = create_info_embed(
+                    "Queue Ended",
+                    "No more songs in queue"
+                )
+                await interaction.followup.send(embed=embed)
+        
+        except Exception as e:
+            logger.error(f"Skip command error: {e}")
+            embed = create_error_embed("Skip Error", str(e)[:200])
+            await interaction.followup.send(embed=embed)
+    
+    @app_commands.command(name="stop", description="Stop playback and clear queue")
+    async def stop(self, interaction: discord.Interaction):
+        """Stop playback."""
+        await interaction.response.defer()
+        
+        try:
+            player = get_player(interaction.guild_id)
+            if not player:
+                embed = create_error_embed(
+                    "Player Not Active",
+                    "There is no active player in this server!"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            player.stop()
+            await player.disconnect()
+            remove_player(interaction.guild_id)
+            
+            embed = create_info_embed(
+                "Playback Stopped",
+                "Music playback stopped and queue cleared"
+            )
+            await interaction.followup.send(embed=embed)
+        
+        except Exception as e:
+            logger.error(f"Stop command error: {e}")
+            embed = create_error_embed("Stop Error", str(e)[:200])
+            await interaction.followup.send(embed=embed)
+    
+    @app_commands.command(name="queue", description="Show current queue")
+    async def queue_command(self, interaction: discord.Interaction):
+        """Show queue."""
+        await interaction.response.defer()
+        
+        try:
+            player = get_player(interaction.guild_id)
+            if not player or player.queue.is_empty():
+                embed = create_error_embed(
+                    "Queue Empty",
+                    "The queue is empty. Use /play to add songs!"
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            queue_list = player.get_queue_list()
+            
+            # Build queue data for embed
+            songs_data = []
+            for song in queue_list:
+                songs_data.append({
+                    'title': song.title,
+                    'artist': song.artist,
+                    'duration': song.duration,
+                    'requester': getattr(song, 'requester', 'Unknown'),
+                })
+            
+            embed = create_queue_embed(
+                songs=songs_data,
+                current_index=player.queue.current_index if len(queue_list) > 0 else -1,
+                page=1,
+                page_size=5
+            )
+            
+            view = NowPlayingView(player, self.bot)
+            await interaction.followup.send(embed=embed, view=view)
+        
+        except Exception as e:
+            logger.error(f"Queue command error: {e}")
+            embed = create_error_embed("Queue Error", str(e)[:200])
+            await interaction.followup.send(embed=embed)
+
+
+class NowPlayingView(View):
+    """Interactive buttons for music control."""
+    
+    def __init__(self, player: Player, bot: commands.Bot):
+        super().__init__(timeout=None)
+        self.player = player
+        self.bot = bot
+    
+    @button(label="Pause", style=discord.ButtonStyle.primary, emoji="⏸️")
+    async def pause_button(self, interaction: discord.Interaction, button: Button):
+        """Pause button callback."""
+        await interaction.response.defer()
+        
+        if not self.player.is_playing:
+            await interaction.followup.send("Nothing is playing!", ephemeral=True)
+            return
+        
+        self.player.pause()
+        button.label = "Resume"
+        await interaction.followup.send("⏸️ Paused", ephemeral=True)
+    
+    @button(label="Skip", style=discord.ButtonStyle.primary, emoji="⏭️")
+    async def skip_button(self, interaction: discord.Interaction, button: Button):
+        """Skip button callback."""
+        await interaction.response.defer()
+        
+        next_song = await self.player.skip()
+        if next_song:
+            await interaction.followup.send(
+                f"⏭️ Skipped to: **{next_song.title}**",
+                ephemeral=True
+            )
+        else:
+            await interaction.followup.send("⏹️ No more songs in queue", ephemeral=True)
+    
+    @button(label="Stop", style=discord.ButtonStyle.danger, emoji="⏹️")
+    async def stop_button(self, interaction: discord.Interaction, button: Button):
+        """Stop button callback."""
+        await interaction.response.defer()
+        
+        self.player.stop()
+        await self.player.disconnect()
+        remove_player(interaction.guild_id)
+        await interaction.followup.send("⏹️ Playback stopped", ephemeral=True)
+    
+    @app_commands.command(name="controls", description="Open interactive music control panel")
+    async def controls(self, interaction: discord.Interaction):
+        """Open the interactive control panel."""
+        await self._open_control_panel(interaction)
+    
+    @app_commands.command(name="c", description="Quick open: music control panel")
+    async def c(self, interaction: discord.Interaction):
+        """Quick alias for controls command."""
+        await self._open_control_panel(interaction)
+    
+    async def _open_control_panel(self, interaction: discord.Interaction):
+        """Internal method to open control panel."""
+        await interaction.response.defer()
+        
+        guild_id = interaction.guild_id
+        player = get_player(guild_id)
+        
+        if not player or not player.current_song:
+            embed = create_error_embed(
+                "No Song Playing",
+                "Start playing a song with /play to open the control panel!"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        
+        # Import ControlPanelView
+        from bot.ui.control_panel import ControlPanelView
+        
+        song = player.current_song
+        
+        # Create enhanced control panel embed with progress bar
+        embed = discord.Embed(
+            title="🎛️ Music Control Panel",
+            description=f"**{song.title}**\n*{song.artist or 'Unknown'}*",
+            color=0x7C3AED
+        )
+        
+        if getattr(song, 'thumbnail', None):
+            embed.set_thumbnail(url=song.thumbnail)
+        
+        # Status line with indicators
+        status_text = "🎵 Playing" if not player.is_paused else "⏸️ Paused"
+        loop_mode = getattr(player, 'loop_mode', 'off')
+        autoplay_status = "🔁" if getattr(player, 'autoplay_enabled', False) else "⭕"
+        
+        embed.add_field(
+            name="Status",
+            value=f"{status_text} • Loop: {loop_mode.upper()} • Autoplay: {autoplay_status}",
+            inline=False
+        )
+        
+        # Volume and audio info
+        embed.add_field(
+            name="Volume",
+            value=f"{player.volume}% 🔊",
+            inline=True
+        )
+        
+        # Duration and queue position
+        duration = getattr(song, 'duration', 0)
+        if duration:
+            duration_str = f"{duration // 60}:{duration % 60:02d}"
+        else:
+            duration_str = "Unknown"
+        
+        if player.queue.songs:
+            queue_pos = player.queue.current_position + 1
+            total_queue = len(player.queue.songs) + 1  # Include current song
+            embed.add_field(
+                name="Queue",
+                value=f"Song {queue_pos}/{total_queue}",
+                inline=True
+            )
+        
+        # Duration field
+        embed.add_field(
+            name="Duration",
+            value=duration_str,
+            inline=True
+        )
+        
+        embed.set_footer(text="🌌 Powered by SkyMusic • Click buttons to control")
+        
+        # Send with control panel view
+        view = ControlPanelView(player, guild_id)
+        await interaction.followup.send(embed=embed, view=view)
+
+
+async def setup(bot: commands.Bot, searcher: Searcher, autocomplete: SearchAutocomplete = None):
+    """Load the cog."""
+    await bot.add_cog(MusicCommands(bot, searcher, autocomplete))
