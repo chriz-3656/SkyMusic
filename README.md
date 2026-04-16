@@ -248,6 +248,12 @@ lsof -i :8000
 2. Play 2+ songs to fill queue
 3. Let songs finish - autoplay triggers on empty queue
 4. Check internet connection
+5. **Note (V7.1+)**: Fixed bug where recommendations were being filtered out due to URL validation. Update to latest version if issues persist.
+
+### Control panel (/c) not responding
+- **Note (V7.1+)**: Fixed ImportError in queue_view.py. Update to latest commit if you see this error.
+- Ensure bot has message_content intent enabled
+- Try using `/controls` as alternative command
 
 ## 📈 Version History
 
@@ -258,6 +264,13 @@ lsof -i :8000
 | V4 | Autoplay/radio mode |
 | V5 | Real-time song autocomplete |
 | V6 | Web dashboard |
+| V7 | YouTube Music playlists, control panel refinements, bug fixes |
+
+### V7.1 (Latest - April 2026)
+- **Fixed**: Control panel (`/c`, `/controls`) import error
+- **Fixed**: Autoplay recommendations filtering - now properly returns songs
+- **Improved**: Autocomplete timeout handling for faster response
+- **Added**: Better error handling in queue view interactions
 | **V7** | YouTube Music playlists, control panel shortcuts, full fixes |
 
 ## 🔐 Security
