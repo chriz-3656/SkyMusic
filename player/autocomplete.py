@@ -29,7 +29,7 @@ class SearchAutocomplete:
         self,
         query: str,
         limit: int = 5,
-        timeout: float = 6.0
+        timeout: float = 8.0
     ) -> List[Song]:
         """
         Get autocomplete suggestions for a search query.
@@ -37,12 +37,12 @@ class SearchAutocomplete:
         Args:
             query: Search query (song title, artist, etc.)
             limit: Maximum number of suggestions (default: 5)
-            timeout: Maximum time to wait for results in seconds (default: 6s)
+            timeout: Maximum time to wait for results in seconds (default: 8s)
         
         Returns:
             List of Song objects, max length = limit
         """
-        # Too short to search
+        # Too short to search - require at least 2 characters
         if not query or len(query.strip()) < self.min_query_length:
             return []
         

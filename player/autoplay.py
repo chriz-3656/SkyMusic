@@ -269,9 +269,6 @@ class AutoplayEngine:
         if not hasattr(song, 'title') or not song.title:
             return False
         
-        if not hasattr(song, 'url') or not song.url:
-            return False
-        
         # Skip very short titles (likely not songs)
         if len(song.title) < 3:
             return False

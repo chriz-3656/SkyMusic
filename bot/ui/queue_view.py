@@ -5,7 +5,7 @@ from discord.ui import View, Select, select
 from discord.ext import commands
 from typing import Optional
 from ..utils.colors import PURPLE, ERROR
-from state.shared import get_guild_player
+from state.shared import get_player
 
 
 class QueueView(View):
@@ -28,7 +28,7 @@ class QueueView(View):
     
     def _build_select_menu(self):
         """Build select menu with queue items."""
-        player = get_guild_player(self.guild_id)
+        player = get_player(self.guild_id)
         if not player or not player.queue:
             return
         
@@ -60,7 +60,7 @@ class QueueView(View):
         """Handle song selection from queue."""
         await interaction.response.defer()
         
-        player = get_guild_player(self.guild_id)
+        player = get_player(self.guild_id)
         if not player:
             return
         
@@ -104,7 +104,7 @@ class QueuePageView(View):
     
     def _update_buttons(self):
         """Update button states based on page."""
-        player = get_guild_player(self.guild_id)
+        player = get_player(self.guild_id)
         max_pages = 1
         if player and player.queue:
             max_pages = (len(player.queue) - 1) // 10 + 1
@@ -126,7 +126,7 @@ class QueuePageView(View):
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Next page button."""
         await interaction.response.defer()
-        player = get_guild_player(self.guild_id)
+        player = get_player(self.guild_id)
         max_pages = 1
         if player and player.queue:
             max_pages = (len(player.queue) - 1) // 10 + 1
