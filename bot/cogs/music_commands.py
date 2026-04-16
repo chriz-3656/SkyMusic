@@ -9,7 +9,8 @@ from discord.ui import View, Button, button
 from player.player import Player
 from player.searcher import Searcher
 from player.autocomplete import SearchAutocomplete
-from state.shared import get_player, create_player, remove_player, get_autocomplete_engine, set_autocomplete_engine
+from player.playback import PlaybackFlow
+from state.shared import get_player, create_player, remove_player, get_autocomplete_engine, set_autocomplete_engine, get_manager
 from bot.utils.embeds import (
     create_now_playing_embed,
     create_song_added_embed,
@@ -29,6 +30,7 @@ class MusicCommands(commands.Cog):
         self.bot = bot
         self.searcher = searcher
         self.autocomplete = autocomplete or get_autocomplete_engine()
+        self.playback_flow = PlaybackFlow(get_manager(), searcher)
         
         # V5: Create autocomplete if not provided
         if not self.autocomplete:
@@ -109,37 +111,42 @@ class MusicCommands(commands.Cog):
             voice_channel = member.voice.channel
             guild_id = interaction.guild_id
             
-            # Get or create player
-            player = await self._get_player(guild_id, voice_channel)
-            
             # Check if query is a playlist
             from player.playlist import PlaylistParser
             
             if PlaylistParser.is_playlist_url(query):
                 # Handle playlist
+                player = get_player(guild_id) or create_player(guild_id, self.searcher)
                 await self._handle_playlist(interaction, player, query)
             else:
-                # Handle single song (existing logic)
-                song = await player.add_to_queue(query, str(interaction.user))
+                # Use PlaybackFlow for single song (V8)
+                success, song, message = await self.playback_flow.play(
+                    guild_id=guild_id,
+                    query=query,
+                    voice_channel=voice_channel,
+                    requester=str(interaction.user),
+                    requester_id=interaction.user.id
+                )
                 
-                if song:
-                    # Create embed for added song
+                if success and song:
+                    # Create embed for now playing
                     embed = create_song_added_embed(
                         title=song.title,
                         artist=song.artist,
                         duration=song.duration,
                         requester=str(interaction.user),
-                        position=len(player.queue.songs),
+                        position=1,
                         thumbnail=getattr(song, 'thumbnail', None)
                     )
                     
-                    # Create control buttons
-                    view = NowPlayingView(player, self.bot)
+                    # Get player for view
+                    player = get_player(guild_id)
+                    view = NowPlayingView(player, self.bot) if player else None
                     await interaction.followup.send(embed=embed, view=view)
                 else:
                     embed = create_error_embed(
-                        "Song Not Found",
-                        f"Could not find song: {query}"
+                        "Playback Error",
+                        message or f"Could not play: {query}"
                     )
                     await interaction.followup.send(embed=embed)
         
@@ -248,32 +255,23 @@ class MusicCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
+            success, message = await self.playback_flow.pause(interaction.guild_id)
+            
             player = get_player(interaction.guild_id)
-            if not player or not player.is_playing:
-                embed = create_error_embed(
-                    "Nothing Playing",
-                    "There is nothing currently playing!"
-                )
+            if not success or not player:
+                embed = create_error_embed("Pause Failed", message or "Could not pause playback")
                 await interaction.followup.send(embed=embed)
                 return
             
-            if player.pause():
-                if player.current_song:
-                    embed = create_info_embed(
-                        "Playback Paused",
-                        f"Paused: **{player.current_song.title}** by {player.current_song.artist}"
-                    )
-                else:
-                    embed = create_info_embed("Playback Paused", "Playback has been paused")
-                
-                view = NowPlayingView(player, self.bot)
-                await interaction.followup.send(embed=embed, view=view)
+            song_info = ""
+            if player.current_track:
+                song_info = f"Paused: **{player.current_track.title}** by {player.current_track.artist}"
             else:
-                embed = create_error_embed(
-                    "Pause Failed",
-                    "Could not pause playback"
-                )
-                await interaction.followup.send(embed=embed)
+                song_info = "Playback has been paused"
+            
+            embed = create_info_embed("Playback Paused", song_info)
+            view = NowPlayingView(player, self.bot)
+            await interaction.followup.send(embed=embed, view=view)
         
         except Exception as e:
             logger.error(f"Pause command error: {e}")
@@ -286,32 +284,23 @@ class MusicCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
+            success, message = await self.playback_flow.resume(interaction.guild_id)
+            
             player = get_player(interaction.guild_id)
-            if not player or not player.is_paused:
-                embed = create_error_embed(
-                    "Nothing Paused",
-                    "There is nothing currently paused!"
-                )
+            if not success or not player:
+                embed = create_error_embed("Resume Failed", message or "Could not resume playback")
                 await interaction.followup.send(embed=embed)
                 return
             
-            if player.resume():
-                if player.current_song:
-                    embed = create_info_embed(
-                        "Playback Resumed",
-                        f"Playing: **{player.current_song.title}** by {player.current_song.artist}"
-                    )
-                else:
-                    embed = create_info_embed("Playback Resumed", "Playback has been resumed")
-                
-                view = NowPlayingView(player, self.bot)
-                await interaction.followup.send(embed=embed, view=view)
+            song_info = ""
+            if player.current_track:
+                song_info = f"Playing: **{player.current_track.title}** by {player.current_track.artist}"
             else:
-                embed = create_error_embed(
-                    "Resume Failed",
-                    "Could not resume playback"
-                )
-                await interaction.followup.send(embed=embed)
+                song_info = "Playback has been resumed"
+            
+            embed = create_info_embed("Playback Resumed", song_info)
+            view = NowPlayingView(player, self.bot)
+            await interaction.followup.send(embed=embed, view=view)
         
         except Exception as e:
             logger.error(f"Resume command error: {e}")
@@ -324,22 +313,20 @@ class MusicCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
-            player = get_player(interaction.guild_id)
-            if not player or not player.is_playing:
-                embed = create_error_embed(
-                    "Nothing Playing",
-                    "There is nothing currently playing to skip!"
-                )
+            success, next_song, message = await self.playback_flow.skip(interaction.guild_id)
+            
+            if not success:
+                embed = create_error_embed("Skip Failed", message or "Could not skip song")
                 await interaction.followup.send(embed=embed)
                 return
             
-            next_song = await player.skip()
             if next_song:
                 embed = create_info_embed(
                     "Skipped",
                     f"Now playing: **{next_song.title}** by {next_song.artist}"
                 )
-                view = NowPlayingView(player, self.bot)
+                player = get_player(interaction.guild_id)
+                view = NowPlayingView(player, self.bot) if player else None
                 await interaction.followup.send(embed=embed, view=view)
             else:
                 embed = create_info_embed(
@@ -359,17 +346,13 @@ class MusicCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
-            player = get_player(interaction.guild_id)
-            if not player:
-                embed = create_error_embed(
-                    "Player Not Active",
-                    "There is no active player in this server!"
-                )
+            success, message = await self.playback_flow.stop(interaction.guild_id)
+            
+            if not success:
+                embed = create_error_embed("Stop Failed", message or "Could not stop playback")
                 await interaction.followup.send(embed=embed)
                 return
             
-            player.stop()
-            await player.disconnect()
             remove_player(interaction.guild_id)
             
             embed = create_info_embed(
@@ -398,7 +381,7 @@ class MusicCommands(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
             
-            queue_list = player.get_queue_list()
+            queue_list = player.queue.songs
             
             # Build queue data for embed
             songs_data = []
