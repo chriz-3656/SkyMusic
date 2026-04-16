@@ -491,11 +491,11 @@ class MusicCommands(commands.Cog):
             duration_str = "Unknown"
         
         if player.queue.songs:
-            queue_pos = player.queue.current_position + 1
-            total_queue = len(player.queue.songs) + 1  # Include current song
+            queue_pos = player.queue.current_index + 1
+            total_queue = len(player.queue.songs)
             embed.add_field(
                 name="Queue",
-                value=f"Song {queue_pos}/{total_queue}",
+                value=f"Position {queue_pos}/{total_queue}",
                 inline=True
             )
         

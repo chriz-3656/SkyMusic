@@ -59,6 +59,21 @@ class Player:
             return False
         
         try:
+            # Ensure song has a valid URL
+            if not song.url or song.url == '':
+                logger.warning(f"Song missing URL, trying to fetch: {song.title}")
+                video_id = getattr(song, 'video_id', None)
+                if video_id:
+                    url = await self.searcher.extract_stream_url(video_id)
+                    if url:
+                        song.url = url
+                    else:
+                        logger.error(f"Failed to fetch URL for {song.title}")
+                        return False
+                else:
+                    logger.error(f"No video_id available for {song.title}")
+                    return False
+            
             # Create audio source with FFmpeg
             # FFmpeg will output PCM audio to stdout, discord.py handles the rest
             audio_source = discord.FFmpegPCMAudio(
@@ -100,6 +115,19 @@ class Player:
         # Auto-play next song
         next_song = self.queue.get_next()
         if next_song:
+            # Ensure song has URL before playing
+            if not next_song.url or next_song.url == '':
+                logger.info(f"Fetching URL for: {next_song.title}")
+                video_id = getattr(next_song, 'video_id', None)
+                if video_id:
+                    url = await self.searcher.extract_stream_url(video_id)
+                    if url:
+                        next_song.url = url
+                    else:
+                        logger.error(f"Failed to fetch URL for {next_song.title}")
+                        # Skip to next song
+                        await self._on_song_end()
+                        return
             await self.play_song(next_song)
         else:
             # V4: Autoplay - fetch recommendations if enabled
@@ -120,6 +148,18 @@ class Player:
                         next_song = self.queue.get_next()
                         if next_song:
                             logger.info(f"Autoplay: Starting playback of {next_song.title}")
+                            # Fetch URL for autoplay recommendation
+                            if not next_song.url or next_song.url == '':
+                                video_id = getattr(next_song, 'video_id', None)
+                                if video_id:
+                                    url = await self.searcher.extract_stream_url(video_id)
+                                    if url:
+                                        next_song.url = url
+                                    else:
+                                        logger.error(f"Failed to fetch URL for {next_song.title}")
+                                        # Skip this song
+                                        await self._on_song_end()
+                                        return
                             await self.play_song(next_song)
                     else:
                         logger.warning(f"Autoplay: No recommendations found for {current_song_backup.title}")
