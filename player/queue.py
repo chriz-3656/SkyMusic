@@ -5,19 +5,34 @@ from datetime import datetime
 
 @dataclass
 class Song:
-    """Represents a song in the queue."""
+    """Represents a song in the queue with complete metadata."""
     title: str
     url: str
     duration: int  # in seconds
     requester: str
     artist: str = "Unknown"
+    thumbnail: Optional[str] = None  # Album art URL
+    video_id: Optional[str] = None  # YouTube Music video ID
+    added_at: datetime = field(default_factory=datetime.now)
     
     def __str__(self):
         return f"{self.title} by {self.artist}"
+    
+    def to_dict(self):
+        """Convert to dictionary for API/JSON."""
+        return {
+            'title': self.title,
+            'artist': self.artist,
+            'duration': self.duration,
+            'url': self.url,
+            'requester': self.requester,
+            'thumbnail': self.thumbnail,
+            'video_id': self.video_id,
+        }
 
 
 class Queue:
-    """Per-guild queue management."""
+    """Per-guild queue management with complete isolation."""
     
     def __init__(self, guild_id: int):
         self.guild_id = guild_id
@@ -79,3 +94,4 @@ class Queue:
     def is_empty(self) -> bool:
         """Check if queue is empty."""
         return len(self.songs) == 0
+

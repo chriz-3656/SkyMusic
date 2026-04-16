@@ -53,6 +53,10 @@ async def setup_bot():
     """Set up Discord bot with commands."""
     searcher = Searcher(search_timeout=SEARCH_TIMEOUT)
     
+    # V8: Initialize PlayerManager with searcher
+    from state.shared import initialize_manager
+    initialize_manager(searcher)
+    
     # V4: Initialize autoplay engine
     autoplay_engine = AutoplayEngine(searcher)
     set_autoplay_engine(autoplay_engine)
