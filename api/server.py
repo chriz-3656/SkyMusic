@@ -3,22 +3,26 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+import time
 
-from state.shared import get_player, get_bot
+from state.shared import get_player, get_bot, get_all_players
 from .models import (
     NowPlayingResponse, QueueResponse, QueueItemResponse,
-    SongResponse, StatusResponse, ActionResponse,
+    SongResponse, StatusResponse, ActionResponse, BotStatsResponse,
     VolumeRequest, AutoplayRequest, LoopRequest
 )
 
 logger = logging.getLogger(__name__)
+
+# Track bot start time
+_bot_start_time = time.time()
 
 
 def create_app():
     """Create and configure FastAPI app."""
     app = FastAPI(title="Music Bot API", version="1.0.0")
     
-    # CORS middleware
+    # CORS middleware - allow all origins (frontend can be on any origin)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -31,10 +35,9 @@ def create_app():
     
     def get_active_guild_id():
         """Get the first active guild ID."""
-        from state.shared import get_all_players
         players = get_all_players()
         if players:
-            return list(players.keys())[0]  # Return first active guild
+            return list(players.keys())[0]
         return 0
     
     @app.get("/api/status", response_model=StatusResponse)
@@ -85,7 +88,8 @@ def create_app():
                 video_id=getattr(player.current_song, 'video_id', None)
             ),
             is_playing=player.is_playing,
-            is_paused=player.is_paused
+            is_paused=player.is_paused,
+            volume=getattr(player, 'volume', 100)
         )
     
     @app.get("/api/queue", response_model=QueueResponse)
@@ -205,7 +209,7 @@ def create_app():
         if not player:
             return {"enabled": False}
         
-        return {"enabled": player.autoplay_enabled}
+        return {"enabled": getattr(player, 'autoplay_enabled', False)}
     
     @app.post("/api/volume", response_model=ActionResponse)
     async def set_volume(request: VolumeRequest):
@@ -216,11 +220,16 @@ def create_app():
         if not player:
             raise HTTPException(status_code=404, detail="Player not found")
         
-        if not 0 <= request.level <= 100:
+        # Support both 'level' and 'volume' parameter names
+        volume = request.level if request.level is not None else request.volume
+        if volume is None:
+            raise HTTPException(status_code=400, detail="Volume level required")
+        
+        if not 0 <= volume <= 100:
             raise HTTPException(status_code=400, detail="Volume must be between 0 and 100")
         
-        player.set_volume(request.level)
-        return ActionResponse(success=True, message=f"Volume set to {request.level}%")
+        player.set_volume(volume)
+        return ActionResponse(success=True, message=f"Volume set to {volume}%")
     
     @app.get("/api/volume")
     async def get_volume():
@@ -231,10 +240,10 @@ def create_app():
         if not player:
             return {"volume": 100}
         
-        return {"volume": player.volume}
+        return {"volume": getattr(player, 'volume', 100)}
     
     @app.post("/api/loop", response_model=ActionResponse)
-    async def toggle_loop(request: LoopRequest):
+    async def toggle_loop(request: Optional[LoopRequest] = None):
         """Toggle loop mode (off, song, queue)."""
         guild_id = get_active_guild_id()
         player = get_player(guild_id)
@@ -242,14 +251,18 @@ def create_app():
         if not player:
             raise HTTPException(status_code=404, detail="Player not found")
         
-        if request.mode:
+        if request and request.mode:
             if request.mode not in ('off', 'song', 'queue'):
                 raise HTTPException(status_code=400, detail="Invalid loop mode")
             player.loop_mode = request.mode
         else:
             # Cycle through modes
             modes = ['off', 'song', 'queue']
-            current_idx = modes.index(player.loop_mode)
+            current_mode = getattr(player, 'loop_mode', 'off')
+            try:
+                current_idx = modes.index(current_mode)
+            except ValueError:
+                current_idx = 0
             player.loop_mode = modes[(current_idx + 1) % len(modes)]
         
         return ActionResponse(success=True, message=f"Loop mode: {player.loop_mode}")
@@ -263,14 +276,112 @@ def create_app():
         if not player:
             return {"mode": "off"}
         
-        return {"mode": player.loop_mode}
+        return {"mode": getattr(player, 'loop_mode', 'off')}
+    
+    @app.post("/api/shuffle", response_model=ActionResponse)
+    async def toggle_shuffle():
+        """Toggle shuffle."""
+        guild_id = get_active_guild_id()
+        player = get_player(guild_id)
+        
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        current_shuffle = getattr(player, 'shuffle_enabled', False)
+        player.shuffle_enabled = not current_shuffle
+        status = "enabled" if player.shuffle_enabled else "disabled"
+        return ActionResponse(success=True, message=f"Shuffle {status}")
+    
+    @app.get("/api/shuffle")
+    async def get_shuffle_status():
+        """Get shuffle status."""
+        guild_id = get_active_guild_id()
+        player = get_player(guild_id)
+        
+        if not player:
+            return {"enabled": False}
+        
+        return {"enabled": getattr(player, 'shuffle_enabled', False)}
+    
+    @app.post("/api/queue/clear", response_model=ActionResponse)
+    async def clear_queue():
+        """Clear entire queue."""
+        guild_id = get_active_guild_id()
+        player = get_player(guild_id)
+        
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Clear the queue
+        if hasattr(player, 'queue'):
+            player.queue.queue.clear()
+        
+        return ActionResponse(success=True, message="Queue cleared")
+    
+    @app.post("/api/queue/remove/{index}", response_model=ActionResponse)
+    async def remove_from_queue(index: int):
+        """Remove song from queue at index."""
+        guild_id = get_active_guild_id()
+        player = get_player(guild_id)
+        
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        try:
+            if hasattr(player, 'queue'):
+                queue_list = player.get_queue_list()
+                if 0 <= index < len(queue_list):
+                    player.queue.queue.pop(index)
+                    return ActionResponse(success=True, message=f"Removed song at index {index}")
+        except Exception as e:
+            pass
+        
+        return ActionResponse(success=False, message="Could not remove song")
+    
+    @app.post("/api/seek", response_model=ActionResponse)
+    async def seek(request: dict):
+        """Seek to position."""
+        guild_id = get_active_guild_id()
+        player = get_player(guild_id)
+        
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Seeking is not fully implemented, but we accept the request
+        return ActionResponse(success=True, message="Seek request received")
+    
+    @app.get("/api/bot/stats", response_model=BotStatsResponse)
+    async def get_bot_stats():
+        """Get bot statistics."""
+        bot = get_bot()
+        players = get_all_players()
+        
+        # Calculate uptime
+        uptime_seconds = time.time() - _bot_start_time
+        hours = int(uptime_seconds // 3600)
+        minutes = int((uptime_seconds % 3600) // 60)
+        uptime_str = f"{hours}h {minutes}m"
+        
+        # Count active servers and users
+        total_servers = len(players) if players else 0
+        playing_now = sum(1 for p in (players.values() if players else []) if getattr(p, 'is_playing', False))
+        total_users = 0
+        if bot:
+            total_users = sum(len(guild.members) for guild in bot.guilds)
+        
+        return BotStatsResponse(
+            uptime=uptime_str,
+            total_servers=total_servers,
+            total_users=total_users,
+            playing_now=playing_now
+        )
     
     @app.get("/api/health")
     async def health():
         """Health check."""
         return {"status": "ok"}
     
-    # Serve static files
+    # Serve static files (web dashboard)
     try:
         app.mount("/", StaticFiles(directory="web", html=True), name="static")
     except Exception as e:

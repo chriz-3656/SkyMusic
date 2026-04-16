@@ -18,7 +18,7 @@ class NowPlayingResponse(BaseModel):
     song: Optional[SongResponse] = None
     is_playing: bool
     is_paused: bool
-    position: int = 0  # Current playback position in seconds
+    position: int = 0
     volume: int = 100
 
 
@@ -50,10 +50,19 @@ class ActionResponse(BaseModel):
     message: str
 
 
+class BotStatsResponse(BaseModel):
+    """Bot statistics response."""
+    uptime: str = "-"
+    total_servers: int = 0
+    total_users: int = 0
+    playing_now: int = 0
+
+
 # Request models
 class VolumeRequest(BaseModel):
     """Volume control request."""
-    level: int
+    level: Optional[int] = None
+    volume: Optional[int] = None
 
 
 class AutoplayRequest(BaseModel):

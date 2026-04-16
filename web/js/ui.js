@@ -284,8 +284,8 @@ const UI = (() => {
         updateBotStats(stats) {
             if (!stats) return;
             if (DOM.uptime) setText(DOM.uptime, stats.uptime || '-');
-            if (DOM.totalServers) setText(DOM.totalServers, formatNumber(stats.servers || 0));
-            if (DOM.totalUsers) setText(DOM.totalUsers, formatNumber(stats.users || 0));
+            if (DOM.totalServers) setText(DOM.totalServers, formatNumber(stats.total_servers || 0));
+            if (DOM.totalUsers) setText(DOM.totalUsers, formatNumber(stats.total_users || 0));
         },
 
         // Utility

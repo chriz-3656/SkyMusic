@@ -4,7 +4,8 @@
  */
 
 const API = (() => {
-    const BASE_URL = 'http://localhost:8000/api';
+    // Use relative path - works whether served from localhost:8000 or any domain
+    const BASE_URL = '/api';
     const CACHE_DURATION = 2000; // 2 seconds
     const cache = new Map();
 
@@ -28,13 +29,15 @@ const API = (() => {
                 method: options.method || 'GET',
                 headers: {
                     'Cache-Control': 'no-cache',
+                    'Content-Type': 'application/json',
                     ...options.headers
                 },
                 ...options
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                console.error(`API Error [${endpoint}]: HTTP ${response.status}`);
+                return null;
             }
 
             const data = await response.json();
@@ -93,10 +96,9 @@ const API = (() => {
 
         // Volume Control
         async setVolume(volume) {
-            invalidateCache('/now-playing');
+            invalidateCache('/volume');
             return fetchAPI('/volume', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ volume: Math.max(0, Math.min(100, volume)) })
             });
         },
@@ -107,7 +109,7 @@ const API = (() => {
 
         // Loop Control
         async toggleLoop() {
-            invalidateCache('/now-playing');
+            invalidateCache('/loop');
             return fetchAPI('/loop', { method: 'POST' });
         },
 
@@ -117,7 +119,7 @@ const API = (() => {
 
         // Shuffle Control
         async toggleShuffle() {
-            invalidateCache('/queue');
+            invalidateCache('/shuffle');
             return fetchAPI('/shuffle', { method: 'POST' });
         },
 
@@ -140,22 +142,24 @@ const API = (() => {
             invalidateCache('/queue');
             return fetchAPI('/queue/reorder', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ from: fromIndex, to: toIndex })
             });
         },
 
         // Autoplay
         async toggleAutoplay(enabled = null) {
-            // If enabled is null, toggle the current state
-            const currentStatus = await this.getAutoplayStatus();
-            const newState = enabled !== null ? enabled : !currentStatus.enabled;
-            
             invalidateCache('/autoplay');
+            if (enabled !== null) {
+                return fetchAPI('/autoplay', {
+                    method: 'POST',
+                    body: JSON.stringify({ enabled })
+                });
+            }
+            // Toggle current state
+            const currentStatus = await this.getAutoplayStatus();
             return fetchAPI('/autoplay', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: newState })
+                body: JSON.stringify({ enabled: !currentStatus?.enabled })
             });
         },
 
@@ -167,30 +171,8 @@ const API = (() => {
         async seek(position) {
             return fetchAPI('/seek', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ position: Math.max(0, position) })
             });
-        },
-
-        // Favorites
-        async addFavorite(songId) {
-            return fetchAPI('/favorites/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ song_id: songId })
-            });
-        },
-
-        async removeFavorite(songId) {
-            return fetchAPI('/favorites/remove', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ song_id: songId })
-            });
-        },
-
-        async getFavorites() {
-            return fetchAPI('/favorites');
         },
 
         // Statistics
@@ -204,14 +186,6 @@ const API = (() => {
 
         async getTopSongs() {
             return fetchAPI('/bot/top');
-        },
-
-        async getTodayStats() {
-            return fetchAPI('/stats/today');
-        },
-
-        async getServerInfo(guildId) {
-            return fetchAPI(`/server/${guildId}`);
         },
 
         // Utility
