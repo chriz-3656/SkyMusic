@@ -6,6 +6,7 @@ from discord.ext import commands, tasks
 from typing import Optional
 from ..ui.control_panel import ControlPanelView
 from .music_commands import NowPlayingView
+from ..ui.state import get_panel_manager
 from ..utils.colors import PURPLE, ERROR, SUCCESS
 from state.shared import get_player, get_bot
 
@@ -16,6 +17,49 @@ class InteractiveControls(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.control_panel_messages = {}  # guild_id -> message_id
+        self.panel_manager = get_panel_manager()
+    
+    async def update_or_create_panel(
+        self,
+        guild_id: int,
+        channel: discord.TextChannel,
+        embed: discord.Embed,
+        view: discord.ui.View = None
+    ) -> Optional[discord.Message]:
+        """
+        Update existing control panel or create new one.
+        
+        Args:
+            guild_id: Guild ID
+            channel: Channel to send/update message in
+            embed: Embed to display
+            view: Discord view with buttons
+        
+        Returns:
+            Message object or None if failed
+        """
+        panel = self.panel_manager.get_panel(guild_id)
+        
+        # Try to update existing message
+        if panel and panel.message:
+            try:
+                await panel.message.edit(embed=embed, view=view)
+                return panel.message
+            except discord.NotFound:
+                # Message was deleted, create new one
+                panel.message = None
+                panel.message_id = None
+            except Exception as e:
+                print(f"Failed to update panel: {e}")
+        
+        # Create new message
+        try:
+            message = await channel.send(embed=embed, view=view)
+            self.panel_manager.set_panel_message(guild_id, message)
+            return message
+        except Exception as e:
+            print(f"Failed to create panel: {e}")
+            return None
     
     @commands.Cog.listener()
     async def on_ready(self):
