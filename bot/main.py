@@ -92,7 +92,7 @@ async def setup_bot():
                 synced = await bot.tree.sync()
                 logger.info(f"{SUCCESS} Successfully synced {len(synced)} app commands with Discord:")
                 for cmd in synced:
-                    logger.info(f"  ✓ /{cmd.name}")
+                    logger.info(f"  CHECK /{cmd.name}")
                 synced_once = True
             except Exception as e:
                 logger.error(f"{ERROR} Failed to sync commands: {e}", exc_info=True)
@@ -132,7 +132,7 @@ async def setup_bot():
                     await bot.change_presence(
                         activity=discord.Activity(
                             type=discord.ActivityType.listening,
-                            name="🎶 Use /play to start music"
+                            name=f"{MUSIC} Use /play to start music"
                         )
                     )
             except Exception as e:

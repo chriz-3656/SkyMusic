@@ -1,4 +1,4 @@
-from bot.utils.emojis import PLAY, PAUSE, MUSIC, VOL_UP, ERROR
+from bot.utils.emojis import ERROR, MUSIC, PAUSE, PLAY, SEARCH, VOL_UP
 """Interactive control system for SkyMusic bot."""
 
 import discord
@@ -75,7 +75,7 @@ class InteractiveControls(commands.Cog):
             inline=True
         )
         
-        embed.set_footer(text="🌌 Powered by SkyMusic")
+        embed.set_footer(text="Powered by SkyMusic")
         
         # Send with now playing view
         view = NowPlayingView(guild_id)
@@ -100,7 +100,7 @@ class InteractiveControls(commands.Cog):
                 description="Start playing music with /play",
                 color=ERROR
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
@@ -139,7 +139,7 @@ class InteractiveControls(commands.Cog):
                 inline=True
             )
         
-        embed.set_footer(text="🌌 Powered by SkyMusic • Click buttons to control")
+        embed.set_footer(text="Powered by SkyMusic • Click buttons to control")
         
         # Send with control panel view
         view = ControlPanelView(guild_id)
@@ -181,7 +181,7 @@ class InteractiveControls(commands.Cog):
             inline=True
         )
         
-        embed.set_footer(text="🌌 Powered by SkyMusic")
+        embed.set_footer(text="Powered by SkyMusic")
         
         # Create quick access buttons
         view = JumpBackInView(guild_id)
@@ -212,10 +212,10 @@ class JumpBackInView(discord.ui.View):
                 title=f"{PLAY} Resuming...",
                 color=SUCCESS
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
     
-    @discord.ui.button(label="🔍 Search", style=discord.ButtonStyle.secondary, custom_id="search_jump_btn")
+    @discord.ui.button(label="SEARCH  Search", style=discord.ButtonStyle.secondary, custom_id="search_jump_btn")
     async def search_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open search modal."""
         from ..ui.modals import SearchModal

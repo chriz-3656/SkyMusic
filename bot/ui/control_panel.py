@@ -1,4 +1,4 @@
-from bot.utils.emojis import PLAY, PAUSE, STOP, SKIP, VOL_UP, AUTOPLAY, QUEUE
+from bot.utils.emojis import ADD, AUTOPLAY, PAUSE, PLAY, QUEUE, SEARCH, SKIP, STOP, VOL_DOWN, VOL_UP
 """Control panel view with interactive buttons for music control."""
 
 import discord
@@ -81,7 +81,7 @@ class ControlPanelView(View):
                 description="No songs in queue. Use /play to start!",
                 color=ERROR
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
         
@@ -109,24 +109,24 @@ class ControlPanelView(View):
                 inline=False
             )
         
-        embed.set_footer(text="🌌 Powered by SkyMusic")
+        embed.set_footer(text="Powered by SkyMusic")
         await interaction.followup.send(embed=embed, ephemeral=True)
     
-    @button(label="➕ Add Song", style=discord.ButtonStyle.success, custom_id="add_song_btn", row=1)
+    @button(label="ADD  Add Song", style=discord.ButtonStyle.success, custom_id="add_song_btn", row=1)
     async def add_song_button(self, interaction: discord.Interaction, button: Button):
         """Open add song modal."""
         from .modals import AddSongModal
         modal = AddSongModal(self.player)
         await interaction.response.send_modal(modal)
     
-    @button(label="🔍 Search", style=discord.ButtonStyle.secondary, custom_id="search_btn", row=1)
+    @button(label="SEARCH  Search", style=discord.ButtonStyle.secondary, custom_id="search_btn", row=1)
     async def search_button(self, interaction: discord.Interaction, button: Button):
         """Open search modal."""
         from .modals import SearchModal
         modal = SearchModal(self.player)
         await interaction.response.send_modal(modal)
     
-    @button(label="🔉", style=discord.ButtonStyle.secondary, custom_id="vol_down_btn", row=2)
+    @button(label="VOL_DOWN ", style=discord.ButtonStyle.secondary, custom_id="vol_down_btn", row=2)
     async def volume_down_button(self, interaction: discord.Interaction, button: Button):
         """Volume down."""
         await interaction.response.defer()
@@ -194,7 +194,7 @@ class ControlPanelView(View):
                     color=ERROR
                 )
             
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
     
     async def _update_panel(self, interaction: discord.Interaction):

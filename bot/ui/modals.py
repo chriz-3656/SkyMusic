@@ -6,7 +6,7 @@ from discord.ext import commands
 from typing import Optional
 from ..utils.colors import PURPLE, ERROR
 from player.player import Player
-from bot.utils.emojis import SUCCESS
+from bot.utils.emojis import SUCCESS, SEARCH
 
 
 class AddSongModal(Modal, title="Add Song to Queue"):
@@ -36,16 +36,16 @@ class AddSongModal(Modal, title="Add Song to Queue"):
                 description="No player active. Start playing music first with /play",
                 color=ERROR
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
         
         embed = discord.Embed(
-            title="🔍 Searching...",
+            title=f"{SEARCH} Searching...",
             description=f"Looking for: **{query}**",
             color=PURPLE
         )
-        embed.set_footer(text="🌌 Powered by SkyMusic")
+        embed.set_footer(text="Powered by SkyMusic")
         
         msg = await interaction.followup.send(embed=embed, ephemeral=True)
         
@@ -59,7 +59,7 @@ class AddSongModal(Modal, title="Add Song to Queue"):
                     description=f"Couldn't find any songs matching: **{query}**",
                     color=ERROR
                 )
-                embed.set_footer(text="🌌 Powered by SkyMusic")
+                embed.set_footer(text="Powered by SkyMusic")
                 await msg.edit(embed=embed)
                 return
             
@@ -80,7 +80,7 @@ class AddSongModal(Modal, title="Add Song to Queue"):
                 from ..utils.embeds import format_duration
                 embed.add_field(name="Duration", value=format_duration(song.duration), inline=True)
             
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await msg.edit(embed=embed)
             
         except Exception as e:
@@ -89,7 +89,7 @@ class AddSongModal(Modal, title="Add Song to Queue"):
                 description=f"Failed to search: {str(e)[:100]}",
                 color=ERROR
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await msg.edit(embed=embed)
 
 
@@ -120,7 +120,7 @@ class SearchModal(Modal, title="Search for Song"):
                 description="No player active. Start playing music first with /play",
                 color=ERROR
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
         
@@ -133,7 +133,7 @@ class SearchModal(Modal, title="Search for Song"):
                     description=f"No songs found for: **{query}**",
                     color=ERROR
                 )
-                embed.set_footer(text="🌌 Powered by SkyMusic")
+                embed.set_footer(text="Powered by SkyMusic")
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             
@@ -160,5 +160,5 @@ class SearchModal(Modal, title="Search for Song"):
                 description=f"Search failed: {str(e)[:100]}",
                 color=ERROR
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)

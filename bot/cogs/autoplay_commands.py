@@ -105,7 +105,7 @@ class AutoplayCommands(commands.Cog):
                     color=ERROR
                 )
             
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed)
             
         except Exception as e:
@@ -173,7 +173,7 @@ class AutoplayCommands(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text="🌌 Powered by SkyMusic")
+        embed.set_footer(text="Powered by SkyMusic")
         await interaction.followup.send(embed=embed, ephemeral=True)
 
 

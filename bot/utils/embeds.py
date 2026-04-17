@@ -1,4 +1,4 @@
-from bot.utils.emojis import MUSIC, PLAY, VOL_UP, SUCCESS, ERROR
+from bot.utils.emojis import ERROR, MUSIC, PLAY, QUEUE, SUCCESS, VOL_UP
 """Embed builder utilities for SkyMusic bot."""
 
 import discord
@@ -136,7 +136,7 @@ def create_queue_embed(
     """
     if not songs:
         embed = discord.Embed(
-            title="📋 Queue",
+            title=f"{QUEUE} Queue",
             description="Queue is empty",
             color=PURPLE,
             timestamp=datetime.now()
@@ -149,7 +149,7 @@ def create_queue_embed(
     end_idx = min(start_idx + page_size, len(songs))
     
     embed = discord.Embed(
-        title="📋 Queue",
+        title=f"{QUEUE} Queue",
         description=f"Page {page}/{total_pages}",
         color=PURPLE,
         timestamp=datetime.now()

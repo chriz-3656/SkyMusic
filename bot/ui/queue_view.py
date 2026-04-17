@@ -80,7 +80,7 @@ class QueueView(View):
                 title=f"{SKIP} Jumped to Song",
                 color=PURPLE
             )
-            embed.set_footer(text="🌌 Powered by SkyMusic")
+            embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
 
 

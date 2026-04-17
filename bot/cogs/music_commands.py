@@ -19,7 +19,7 @@ from bot.utils.embeds import (
     create_info_embed,
     format_duration
 )
-from bot.utils.emojis import PLAY, PAUSE, STOP, SKIP, MUSIC, AUTOPLAY, VOL_UP
+from bot.utils.emojis import AUTOPLAY, LIBRARY, MUSIC, PAUSE, PLAY, SKIP, STOP, VOL_UP
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +179,7 @@ class MusicCommands(commands.Cog):
             
             # Show loading message
             loading_embed = discord.Embed(
-                title="📚 Loading Playlist",
+                title=f"{LIBRARY} Loading Playlist",
                 description="Fetching playlist information...",
                 color=0x7C3AED
             )
@@ -214,7 +214,7 @@ class MusicCommands(commands.Cog):
             
             # Create playlist loaded embed
             embed = discord.Embed(
-                title="📚 Playlist Loaded",
+                title=f"{LIBRARY} Playlist Loaded",
                 description=f"**{playlist_info['title']}**",
                 color=0x7C3AED
             )
@@ -238,7 +238,7 @@ class MusicCommands(commands.Cog):
                     inline=False
                 )
             
-            embed.set_footer(text="🌌 Powered by SkyMusic • Use /play or /c to control")
+            embed.set_footer(text="Powered by SkyMusic • Use /play or /c to control")
             
             await interaction.followup.send(embed=embed)
             
@@ -490,7 +490,7 @@ class MusicCommands(commands.Cog):
             inline=True
         )
         
-        embed.set_footer(text="🌌 Powered by SkyMusic • Click buttons to control")
+        embed.set_footer(text="Powered by SkyMusic • Click buttons to control")
         
         # Send with control panel view
         view = ControlPanelView(player, guild_id)

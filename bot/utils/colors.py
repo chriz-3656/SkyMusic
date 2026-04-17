@@ -22,5 +22,5 @@ PURPLE_LIGHT_RGB = "167, 139, 250"
 PURPLE_DARK_RGB = "109, 40, 217"
 
 # Theme constants
-FOOTER_TEXT = "🌌 Powered by SkyMusic"
+FOOTER_TEXT = "Powered by SkyMusic"
 FOOTER_ICON = "https://discord.com/assets/f78fb51a91667dff012a.png"
