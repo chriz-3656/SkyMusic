@@ -4,7 +4,8 @@ from bot.utils.emojis import ERROR, MUSIC, PAUSE, PLAY, SEARCH, VOL_UP
 import discord
 from discord.ext import commands, tasks
 from typing import Optional
-from ..ui.control_panel import ControlPanelView, NowPlayingView
+from ..ui.control_panel import ControlPanelView
+from .music_commands import NowPlayingView
 from ..utils.colors import PURPLE, ERROR, SUCCESS
 from state.shared import get_player, get_bot
 

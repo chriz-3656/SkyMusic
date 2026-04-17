@@ -1,4 +1,4 @@
-from bot.utils.emojis import ADD, AUTOPLAY, PAUSE, PLAY, QUEUE, SEARCH, SKIP, STOP, VOL_DOWN, VOL_UP
+from bot.utils.emojis import ADD, AUTOPLAY, FAV, PAUSE, PLAY, PREV, QUEUE, SEARCH, SKIP, STOP, VOL_DOWN, VOL_UP
 """Control panel view with interactive buttons for music control."""
 
 import discord
@@ -34,7 +34,7 @@ class ControlPanelView(View):
                 if item.name in ('pause_resume', 'skip', 'previous', 'stop', 'queue_btn', 'add_song', 'vol_up', 'vol_down', 'loop_toggle'):
                     item.disabled = not is_playing if item.name != 'add_song' else False
     
-    @button(label=PREV + " ", style=discord.ButtonStyle.secondary, custom_id="prev_btn", row=0)
+    @button(label=f"{PREV}", style=discord.ButtonStyle.secondary, custom_id="prev_btn", row=0)
     async def previous_button(self, interaction: discord.Interaction, button: Button):
         """Previous song button."""
         await interaction.response.defer()
@@ -42,7 +42,7 @@ class ControlPanelView(View):
             await self.player.skip()
             await self._update_panel(interaction)
     
-    @button(label=PAUSE + " ", style=discord.ButtonStyle.primary, custom_id="pause_resume_btn", row=0)
+    @button(label=f"{PAUSE}", style=discord.ButtonStyle.primary, custom_id="pause_resume_btn", row=0)
     async def pause_resume_button(self, interaction: discord.Interaction, button: Button):
         """Pause/Resume button."""
         await interaction.response.defer()
@@ -112,21 +112,21 @@ class ControlPanelView(View):
         embed.set_footer(text="Powered by SkyMusic")
         await interaction.followup.send(embed=embed, ephemeral=True)
     
-    @button(label="ADD  Add Song", style=discord.ButtonStyle.success, custom_id="add_song_btn", row=1)
+    @button(label=f"{ADD} Add Song", style=discord.ButtonStyle.success, custom_id="add_song_btn", row=1)
     async def add_song_button(self, interaction: discord.Interaction, button: Button):
         """Open add song modal."""
         from .modals import AddSongModal
         modal = AddSongModal(self.player)
         await interaction.response.send_modal(modal)
     
-    @button(label="SEARCH  Search", style=discord.ButtonStyle.secondary, custom_id="search_btn", row=1)
+    @button(label=f"{SEARCH} Search", style=discord.ButtonStyle.secondary, custom_id="search_btn", row=1)
     async def search_button(self, interaction: discord.Interaction, button: Button):
         """Open search modal."""
         from .modals import SearchModal
         modal = SearchModal(self.player)
         await interaction.response.send_modal(modal)
     
-    @button(label="VOL_DOWN ", style=discord.ButtonStyle.secondary, custom_id="vol_down_btn", row=2)
+    @button(label=f"{VOL_DOWN}", style=discord.ButtonStyle.secondary, custom_id="vol_down_btn", row=2)
     async def volume_down_button(self, interaction: discord.Interaction, button: Button):
         """Volume down."""
         await interaction.response.defer()
@@ -166,11 +166,11 @@ class ControlPanelView(View):
                 button.label = f"{AUTOPLAY} Queue"
             else:
                 self.player.loop_mode = 'off'
-                button.label = "{AUTOPLAY} Off"
+                button.label = f"{AUTOPLAY} Off"
             
             await self._update_panel(interaction)
     
-    @button(label=FAV + " ", style=discord.ButtonStyle.secondary, custom_id="fav_btn", row=3)
+    @button(label=f"{FAV}", style=discord.ButtonStyle.secondary, custom_id="fav_btn", row=3)
     async def favorite_button(self, interaction: discord.Interaction, button: Button):
         """Add current song to favorites."""
         await interaction.response.defer()

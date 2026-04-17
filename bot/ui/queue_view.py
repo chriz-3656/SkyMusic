@@ -1,4 +1,4 @@
-from bot.utils.emojis import PLAY, SKIP, MUSIC
+from bot.utils.emojis import PLAY, SKIP, MUSIC, PREV
 """Queue view with select menu for song navigation."""
 
 import discord
@@ -113,7 +113,7 @@ class QueuePageView(View):
         self.prev_button.disabled = self.page <= 0
         self.next_button.disabled = self.page >= max_pages - 1
     
-    @discord.ui.button(label=PREV + "  Previous", style=discord.ButtonStyle.secondary, custom_id="queue_prev")
+    @discord.ui.button(label=f"{PREV} Previous", style=discord.ButtonStyle.secondary, custom_id="queue_prev")
     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Previous page button."""
         await interaction.response.defer()
@@ -123,7 +123,7 @@ class QueuePageView(View):
             self._update_buttons()
             await interaction.message.edit(embed=embed, view=self)
     
-    @discord.ui.button(label="Next ▶️", style=discord.ButtonStyle.secondary, custom_id="queue_next")
+    @discord.ui.button(label=f"{SKIP} Next", style=discord.ButtonStyle.secondary, custom_id="queue_next")
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Next page button."""
         await interaction.response.defer()
