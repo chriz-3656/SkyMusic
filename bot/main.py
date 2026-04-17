@@ -15,7 +15,7 @@ from bot.logger_config import setup_logging
 from player.searcher import Searcher
 from player.autoplay import AutoplayEngine
 from player.autocomplete import SearchAutocomplete
-from bot.utils.emojis import SUCCESS, ERROR
+from bot.utils.emojis import SUCCESS, ERROR, MUSIC
 from state.shared import set_bot, set_autoplay_engine, set_autocomplete_engine
 from api.server import create_app
 

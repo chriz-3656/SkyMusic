@@ -24,7 +24,7 @@ class ColoredFormatter(logging.Formatter):
         'DEBUG': '🔍',
         'INFO': 'ℹ️ ',
         'WARNING': '⚠️ ',
-        'ERROR': f'{ERROR}',
+        'ERROR': '❌',
         'CRITICAL': '🔴',
     }
     
