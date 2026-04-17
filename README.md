@@ -15,7 +15,7 @@ A feature-rich Python Discord music bot with YouTube Music integration, interact
 - **Discord Commands** - Full command support with autocomplete
 - **Interactive Control Panel** - `/controls` or `/c` for Rythm-style UI
 - **Discord Buttons** - Pause, Skip, Stop with visual feedback
-- **Web Dashboard** - Modern UI at `http://localhost:8000`
+- **Web Dashboard** - Modern UI at `http://localhost:8000` with real-time sync
 
 ### 🔍 Search & Discovery
 - **Real-time autocomplete** - Song suggestions as you type
@@ -29,10 +29,14 @@ A feature-rich Python Discord music bot with YouTube Music integration, interact
 - Playback controls (Pause, Skip, Stop)
 - Volume and loop mode control
 - Autoplay toggle
-- Auto-refresh every 3 seconds
+- Real-time state synchronization every 2 seconds
 
-### 💎 Production Quality (V7.3+)
-- **Professional logging** - Crystal-clean console output with colors & emojis
+### 💎 Production Quality (V8 - Architecture Overhaul)
+- **Centralized PlayerManager** - Single source of truth for guild state
+- **State-Driven Design** - Immutable state snapshots for safe UI sync
+- **Unified Playback Flow** - Consistent behavior across all interfaces (commands, buttons, API, autoplay)
+- **Guild Isolation** - Per-guild PlayerInstance objects prevent cross-guild state pollution
+- **Professional Logging** - Crystal-clean output with categorized tags
 - **Zero noise** - Complete FFmpeg warning suppression
 - **Smart filtering** - Verbose discord.py logs filtered out
 - **Readable output** - Color-coded levels with emoji icons (ℹ️ ⚠️ ❌)
@@ -99,22 +103,47 @@ Open your browser: **http://localhost:8000**
 ## 🎯 Architecture
 
 ```
+SkyMusic V8 - State-Driven Architecture
+├── PlayerManager (Singleton - Central State Management)
+│   ├── players: Dict[guild_id, PlayerInstance]
+│   └── Methods: get_or_create_player(), remove_player(), get_state_snapshot()
+│
+├── PlayerInstance (Per-Guild State)
+│   ├── current_track: Song
+│   ├── queue: Queue[Song]
+│   ├── volume: int (0-100)
+│   ├── loop_mode: str (off/song/queue)
+│   ├── autoplay_enabled: bool
+│   ├── voice_client: VoiceClient
+│   ├── control_panel_message: Message
+│   └── state_change_callbacks: List[Callable]
+│
+├── PlaybackFlow (Unified Operations)
+│   ├── play(guild_id, query) → Song
+│   ├── skip(guild_id) → Song | None
+│   ├── pause/resume(guild_id) → bool
+│   ├── stop(guild_id) → None
+│   └── _on_song_end(guild_id) → (trigger autoplay/next)
+│
 SkyMusic/
 ├── bot/                          # Discord bot
 │   ├── main.py                  # Bot entry point
 │   ├── discord_bot.py           # Bot setup
 │   ├── cogs/
-│   │   ├── music_commands.py    # Play, pause, skip, etc.
+│   │   ├── music_commands.py    # Uses PlaybackFlow
 │   │   ├── interactive_controls.py
 │   │   └── autoplay_commands.py
 │   ├── ui/
-│   │   ├── control_panel.py     # Interactive buttons
+│   │   ├── control_panel.py     # UI only - calls PlaybackFlow
 │   │   ├── modals.py
 │   │   └── queue_view.py
 │   └── utils/
 │       ├── embeds.py            # Discord embeds
 │       └── colors.py
-├── player/                       # Audio player
+├── player/                       # Audio player & state
+│   ├── manager.py               # PlayerManager + PlayerInstance (V8)
+│   ├── playback.py              # PlaybackFlow unified operations (V8)
+│   ├── progress.py              # Progress tracking (V8)
 │   ├── player.py                # Core player
 │   ├── queue.py                 # Queue management
 │   ├── playlist.py              # YouTube Music playlists
@@ -124,14 +153,18 @@ SkyMusic/
 │   ├── searcher.py              # ytmusicapi wrapper
 │   └── cache.py                 # Caching layer
 ├── api/                          # FastAPI server
-│   ├── server.py                # REST endpoints
+│   ├── server.py                # REST endpoints (uses PlayerManager)
 │   └── models.py                # Request/response models
 ├── web/                          # Web dashboard
 │   ├── index.html               # Dashboard UI
 │   ├── css/style.css            # Styling
-│   └── js/app.js                # Client logic
-├── state/                        # Global state
-│   └── shared.py                # Shared player state
+│   └── js/
+│       ├── app.js               # Main app logic
+│       ├── api.js               # API wrapper (fixed v8)
+│       ├── ui.js                # UI updates
+│       └── storage.js           # Local storage
+├── state/                        # Global state (V8 refactored)
+│   └── shared.py                # Wraps PlayerManager for compatibility
 └── requirements.txt             # Python dependencies
 ```
 
@@ -272,26 +305,27 @@ lsof -i :8000
 | V5 | Real-time song autocomplete |
 | V6 | Web dashboard |
 | V7 | YouTube Music playlists, control panel refinements |
+| V8 | **NEW**: Centralized PlayerManager, state-driven architecture, unified playback flow |
 
-### V7.3 (Latest - April 2026) ✨ PRODUCTION READY
-- **NEW**: Crystal-clean professional logging output
-- **NEW**: Color-coded log levels (green/yellow/red) with emoji icons (ℹ️ ⚠️ ❌)
-- **NEW**: Complete FFmpeg stderr suppression - zero warnings/noise in console
-- **NEW**: Intelligent filtering of verbose discord.py logs
-- **NEW**: Short timestamps (HH:MM:SS) for better readability
-- **QUALITY**: ~60% noise reduction in console output
-- **STATUS**: Production-grade 5-star quality - ready for deployment
+### V8 (Latest - April 2026) ✨ MAJOR REFACTOR - PRODUCTION READY
+- **ARCHITECTURE**: Centralized PlayerManager singleton with per-guild PlayerInstance objects
+- **STATE MANAGEMENT**: Immutable StateSnapshot for UI synchronization
+- **PLAYBACK**: Unified PlaybackFlow for consistent behavior across all interfaces
+- **CALLBACKS**: Fixed async event loop handling for proper track-end callback execution
+- **DASHBOARD**: Fixed button context issues, improved real-time state sync
+- **METADATA**: Complete song metadata enrichment (duration, thumbnail, artist)
+- **ERROR HANDLING**: Unified error handling framework across all operations
+- **LOGGING**: Categorized, clean logging with [BOT], [PLAYER], [API], [AUTOPLAY], [SEARCH] tags
+- **GUILD ISOLATION**: Full per-guild state isolation - no cross-guild pollution
+- **STATUS**: Enterprise-grade architecture - ready for multi-server deployment
 
-### V7.2 (April 2026)
-- **CRITICAL FIX**: Control panel AttributeError (current_position → current_index)
-- **CRITICAL FIX**: Autoplay now properly fetches stream URLs before playing
-- **Enhanced**: Robust URL extraction for queue and autoplay songs
-- **Added**: Graceful error handling for missing/invalid URLs
-
-### V7.1 (April 2026)
-- **Fixed**: Control panel import error (get_guild_player → get_player)
-- **Fixed**: Autoplay recommendations filtering - now returns songs
-- **Improved**: Autocomplete timeout handling
+### V7.3 (April 2026)
+- **QUALITY**: Crystal-clean professional logging output
+- **LOGGING**: Color-coded log levels (green/yellow/red) with emoji icons (ℹ️ ⚠️ ❌)
+- **PERFORMANCE**: Complete FFmpeg stderr suppression - zero warnings/noise in console
+- **FILTERING**: Intelligent filtering of verbose discord.py logs
+- **UI**: Short timestamps (HH:MM:SS) for better readability
+- **PRODUCTION**: ~60% noise reduction in console output
 
 ## 🔐 Security
 
