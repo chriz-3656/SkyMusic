@@ -92,7 +92,7 @@ async def setup_bot():
                 synced = await bot.tree.sync()
                 logger.info(f"{SUCCESS} Successfully synced {len(synced)} app commands with Discord:")
                 for cmd in synced:
-                    logger.info(f"  CHECK /{cmd.name}")
+                    logger.info(f"  ✓ /{cmd.name}")
                 synced_once = True
             except Exception as e:
                 logger.error(f"{ERROR} Failed to sync commands: {e}", exc_info=True)
