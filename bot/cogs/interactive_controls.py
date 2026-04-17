@@ -244,7 +244,7 @@ class JumpBackInView(discord.ui.View):
         super().__init__(timeout=3600)
         self.guild_id = guild_id
     
-    @discord.ui.button(label=f"{PLAY} Continue", style=discord.ButtonStyle.success, custom_id="continue_btn")
+    @discord.ui.button(emoji=PLAY, label="Continue", style=discord.ButtonStyle.success, custom_id="continue_btn")
     async def continue_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Resume playback."""
         await interaction.response.defer()
@@ -260,7 +260,7 @@ class JumpBackInView(discord.ui.View):
             embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
     
-    @discord.ui.button(label="SEARCH  Search", style=discord.ButtonStyle.secondary, custom_id="search_jump_btn")
+    @discord.ui.button(label="Search", style=discord.ButtonStyle.secondary, custom_id="search_jump_btn")
     async def search_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open search modal."""
         from ..ui.modals import SearchModal
