@@ -1,10 +1,11 @@
-from bot.utils.emojis import ERROR, MUSIC, PLAY, QUEUE, SUCCESS, VOL_UP
+from bot.utils.emojis import MUSIC, PLAY, QUEUE, VOL_UP
 """Embed builder utilities for SkyMusic bot."""
 
 import discord
 from datetime import datetime
 from typing import Optional, List
-from .colors import PURPLE, SUCCESS, ERROR, FOOTER_TEXT
+from . import colors
+from .colors import FOOTER_TEXT
 from ..ui.progress_bar import create_progress_line, format_time
 
 def format_duration(seconds: int) -> str:
@@ -56,7 +57,7 @@ def create_now_playing_embed(
     embed = discord.Embed(
         title=f"{MUSIC} Now Playing",
         description=f"**{title}**",
-        color=PURPLE,
+        color=colors.PURPLE,
         timestamp=datetime.now()
     )
     
@@ -127,7 +128,7 @@ def create_queue_embed(
         embed = discord.Embed(
             title=f"{QUEUE} Queue",
             description="Queue is empty",
-            color=PURPLE,
+            color=colors.PURPLE,
             timestamp=datetime.now()
         )
         embed.set_footer(text=FOOTER_TEXT)
@@ -140,7 +141,7 @@ def create_queue_embed(
     embed = discord.Embed(
         title=f"{QUEUE} Queue",
         description=f"Page {page}/{total_pages}",
-        color=PURPLE,
+        color=colors.PURPLE,
         timestamp=datetime.now()
     )
     
@@ -195,9 +196,9 @@ def create_song_added_embed(
         discord.Embed object
     """
     embed = discord.Embed(
-        title=f"{SUCCESS} Added to Queue",
+        title=f"{MUSIC} Added to Queue",
         description=f"**{title}**",
-        color=SUCCESS,
+        color=colors.SUCCESS,
         timestamp=datetime.now()
     )
     
@@ -242,9 +243,9 @@ def create_error_embed(
         discord.Embed object
     """
     embed = discord.Embed(
-        title=f"{ERROR} {title}",
+        title=f"{MUSIC} {title}",
         description=description,
-        color=ERROR,
+        color=colors.ERROR,
         timestamp=datetime.now()
     )
     
@@ -270,7 +271,7 @@ def create_info_embed(
     embed = discord.Embed(
         title=f"ℹ️ {title}",
         description=description,
-        color=PURPLE,
+        color=colors.PURPLE,
         timestamp=datetime.now()
     )
     

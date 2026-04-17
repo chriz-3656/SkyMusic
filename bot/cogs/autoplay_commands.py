@@ -8,8 +8,8 @@ from typing import Optional
 from player.autoplay import AutoplayEngine
 from state.shared import get_player, get_autoplay_engine
 from bot.utils.embeds import create_info_embed, create_error_embed
-from bot.utils.colors import SUCCESS, ERROR, PURPLE
-from bot.utils.emojis import AUTOPLAY, SUCCESS, ERROR
+from bot.utils import colors
+from bot.utils.emojis import AUTOPLAY
 
 import logging
 
@@ -86,7 +86,7 @@ class AutoplayCommands(commands.Cog):
                 embed = discord.Embed(
                     title=f"{AUTOPLAY} Autoplay Enabled",
                     description="When the queue ends, similar songs will play automatically",
-                    color=SUCCESS
+                    color=colors.SUCCESS
                 )
                 embed.add_field(
                     name="How it works",
@@ -102,7 +102,7 @@ class AutoplayCommands(commands.Cog):
                 embed = discord.Embed(
                     title=f"{AUTOPLAY} Autoplay Disabled",
                     description="Music will stop when the queue ends",
-                    color=ERROR
+                    color=colors.ERROR
                 )
             
             embed.set_footer(text="Powered by SkyMusic")
@@ -127,11 +127,11 @@ class AutoplayCommands(commands.Cog):
         
         embed = discord.Embed(
             title=f"{AUTOPLAY} Autoplay Status",
-            color=PURPLE
+            color=colors.PURPLE
         )
         
         # Status
-        status_text = f"{SUCCESS} ENABLED" if is_enabled else f"{ERROR} DISABLED"
+        status_text = f"✓ ENABLED" if is_enabled else f"✗ DISABLED"
         embed.add_field(name="Status", value=status_text, inline=True)
         
         # Current song

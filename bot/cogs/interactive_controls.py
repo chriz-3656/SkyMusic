@@ -1,4 +1,4 @@
-from bot.utils.emojis import ERROR, MUSIC, PAUSE, PLAY, SEARCH, VOL_UP
+from bot.utils.emojis import MUSIC, PAUSE, PLAY, SEARCH, VOL_UP
 """Interactive control system for SkyMusic bot."""
 
 import discord
@@ -7,7 +7,7 @@ from typing import Optional
 from ..ui.control_panel import ControlPanelView
 from .music_commands import NowPlayingView
 from ..ui.state import get_panel_manager
-from ..utils.colors import PURPLE, ERROR, SUCCESS
+from ..utils import colors
 from state.shared import get_player, get_bot
 
 
@@ -84,7 +84,7 @@ class InteractiveControls(commands.Cog):
         embed = discord.Embed(
             title=f"{MUSIC} Now Playing",
             description=f"**{song['title']}**\n*{song.get('artist', 'Unknown')}*",
-            color=PURPLE
+            color=colors.PURPLE
         )
         
         if song.get('thumbnail'):
@@ -141,9 +141,9 @@ class InteractiveControls(commands.Cog):
         player = get_player(guild_id)
         if not player or not player.current_song:
             embed = discord.Embed(
-                title=f"{ERROR} No Song Playing",
+                title=f"{MUSIC} No Song Playing",
                 description="Start playing music with /play",
-                color=ERROR
+                color=colors.ERROR
             )
             embed.set_footer(text="Powered by SkyMusic")
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -155,7 +155,7 @@ class InteractiveControls(commands.Cog):
         embed = discord.Embed(
             title="Music Control Panel",
             description=f"**{song['title']}**\n*{song.get('artist', 'Unknown')}*",
-            color=PURPLE
+            color=colors.PURPLE
         )
         
         if song.get('thumbnail'):
@@ -207,7 +207,7 @@ class InteractiveControls(commands.Cog):
         embed = discord.Embed(
             title=f"{MUSIC} Jump Back In",
             description=f"**{song['title']}**\n*{song.get('artist', 'Unknown')}*",
-            color=PURPLE
+            color=colors.PURPLE
         )
         
         if song.get('thumbnail'):
@@ -255,7 +255,7 @@ class JumpBackInView(discord.ui.View):
             
             embed = discord.Embed(
                 title=f"{PLAY} Resuming...",
-                color=SUCCESS
+                color=colors.SUCCESS
             )
             embed.set_footer(text="Powered by SkyMusic")
             await interaction.followup.send(embed=embed, ephemeral=True)
