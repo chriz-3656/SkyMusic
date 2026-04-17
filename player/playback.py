@@ -84,8 +84,8 @@ class PlaybackFlow:
         try:
             logger.info(f"[SEARCH] Searching for: {query}")
             
-            # Try to search/extract
-            result = await self.searcher.search(query)
+            # Try to search/extract (pass requester to Searcher)
+            result = await self.searcher.search(query, requester)
             
             if not result:
                 logger.warning(f"[SEARCH] No results for: {query}")

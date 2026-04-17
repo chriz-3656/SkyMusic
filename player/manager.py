@@ -89,6 +89,16 @@ class PlayerInstance:
         # Callbacks for state changes
         self.state_change_callbacks: List[Callable[[StateSnapshot], None]] = []
     
+    @property
+    def current_song(self) -> Optional[Song]:
+        """Backward compatibility property - returns current_track."""
+        return self.current_track
+    
+    @current_song.setter
+    def current_song(self, value: Optional[Song]):
+        """Backward compatibility setter - sets current_track."""
+        self.current_track = value
+    
     def register_state_change_callback(self, callback: Callable[['StateSnapshot'], None]):
         """Register a callback to be called when state changes."""
         self.state_change_callbacks.append(callback)
