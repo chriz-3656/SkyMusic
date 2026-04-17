@@ -41,8 +41,11 @@ const APP = (() => {
         // Playback controls
         if (UI.DOM.pauseBtn) {
             UI.DOM.pauseBtn.addEventListener('click', async () => {
-                const endpoint = currentState.isPaused ? API.resume : API.pause;
-                await endpoint();
+                if (currentState.isPaused) {
+                    await API.resume();
+                } else {
+                    await API.pause();
+                }
                 await updateUI();
             });
         }
