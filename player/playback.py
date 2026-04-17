@@ -310,13 +310,35 @@ class PlaybackFlow:
                     if recommendations and len(recommendations) > 0:
                         logger.info(f"[AUTOPLAY] Got {len(recommendations)} recommendations")
                         
-                        # Add recommendations to queue
+                        # Extract stream URLs for all recommendations before adding to queue
+                        valid_recommendations = []
                         for song in recommendations:
-                            player.queue.add(song)
+                            try:
+                                if not song.url:
+                                    song.url = await self.searcher.extract_stream_url(song.video_id or song.title)
+                                    logger.info(f"[AUTOPLAY] Extracted URL for: {song.title}")
+                                if song.url:
+                                    valid_recommendations.append(song)
+                                else:
+                                    logger.warning(f"[AUTOPLAY] Could not extract URL for: {song.title}")
+                            except Exception as e:
+                                logger.warning(f"[AUTOPLAY] Failed to extract URL for {song.title}: {e}")
                         
-                        # Play the first recommendation
-                        logger.info(f"[AUTOPLAY] Playing autoplay recommendation: {recommendations[0].title}")
-                        await self.skip(guild_id)
+                        if valid_recommendations:
+                            # Add validated recommendations to queue
+                            for song in valid_recommendations:
+                                player.queue.add(song)
+                            
+                            logger.info(f"[AUTOPLAY] Added {len(valid_recommendations)} valid recommendations to queue")
+                            
+                            # Play the first recommendation
+                            logger.info(f"[AUTOPLAY] Playing autoplay recommendation: {valid_recommendations[0].title}")
+                            await self.skip(guild_id)
+                        else:
+                            logger.warning(f"[AUTOPLAY] No valid recommendations with playable URLs")
+                            player.current_track = None
+                            player.is_playing = False
+                            player._notify_state_change()
                     else:
                         logger.warning(f"[AUTOPLAY] No recommendations available")
                         player.current_track = None
