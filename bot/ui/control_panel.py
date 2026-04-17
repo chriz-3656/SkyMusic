@@ -6,6 +6,7 @@ from discord.ui import View, Button, button
 from discord.ext import commands
 from typing import Optional, Callable
 from ..utils.colors import PURPLE, SUCCESS, ERROR
+from .progress_bar import create_progress_line
 
 
 class ControlPanelView(View):

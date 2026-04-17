@@ -5,14 +5,11 @@ import discord
 from datetime import datetime
 from typing import Optional, List
 from .colors import PURPLE, SUCCESS, ERROR, FOOTER_TEXT
+from ..ui.progress_bar import create_progress_line, format_time
 
 def format_duration(seconds: int) -> str:
     """Format seconds to MM:SS format."""
-    if seconds <= 0:
-        return "0:00"
-    minutes = seconds // 60
-    secs = seconds % 60
-    return f"{minutes}:{secs:02d}"
+    return format_time(seconds)
 
 
 def create_progress_bar(current: int, total: int, length: int = 20) -> str:
@@ -25,17 +22,9 @@ def create_progress_bar(current: int, total: int, length: int = 20) -> str:
         length: Length of the progress bar
     
     Returns:
-        String like "████░░░░ 1:23 / 3:45"
+        String like "0:23 ████░░░░ 1:45"
     """
-    if total <= 0:
-        return "░" * length + f" {format_duration(current)} / 0:00"
-    
-    filled = int((current / total) * length)
-    bar = "█" * filled + "░" * (length - filled)
-    current_time = format_duration(current)
-    total_time = format_duration(total)
-    
-    return f"{bar} {current_time} / {total_time}"
+    return create_progress_line(current, total, length)
 
 
 def create_now_playing_embed(
