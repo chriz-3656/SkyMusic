@@ -41,6 +41,12 @@ class PlaybackFlow:
     def __init__(self, manager: PlayerManager, searcher: Searcher):
         self.manager = manager
         self.searcher = searcher
+        # Store event loop for callback scheduling
+        try:
+            self.loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # If no running loop, get the event loop for this thread
+            self.loop = asyncio.get_event_loop()
     
     async def enrich_song_metadata(self, song: Song) -> None:
         """Fetch and enrich song metadata (duration, thumbnail, etc).
@@ -170,15 +176,12 @@ class PlaybackFlow:
                         if error:
                             logger.error(f"[PLAYBACK] Playback error: {error}")
                         try:
-                            # Schedule async task safely
-                            asyncio.create_task(self._on_song_end(guild_id))
-                        except RuntimeError:
-                            # If no event loop, try to get the running loop
-                            try:
-                                loop = asyncio.get_running_loop()
-                                loop.create_task(self._on_song_end(guild_id))
-                            except RuntimeError as e:
-                                logger.error(f"[PLAYBACK] Failed to schedule song end callback: {e}")
+                            # Use stored event loop to schedule task
+                            self.loop.call_soon_threadsafe(
+                                lambda: asyncio.create_task(self._on_song_end(guild_id))
+                            )
+                        except Exception as e:
+                            logger.error(f"[PLAYBACK] Failed to schedule song end callback: {e}")
                     
                     player.voice_client.play(source, after=after_playback)
                     logger.info(f"[PLAYBACK] Now playing: {song.title}")
@@ -250,15 +253,12 @@ class PlaybackFlow:
                     if error:
                         logger.error(f"[PLAYBACK] Playback error: {error}")
                     try:
-                        # Schedule async task safely
-                        asyncio.create_task(self._on_song_end(guild_id))
-                    except RuntimeError:
-                        # If no event loop, try to get the running loop
-                        try:
-                            loop = asyncio.get_running_loop()
-                            loop.create_task(self._on_song_end(guild_id))
-                        except RuntimeError as e:
-                            logger.error(f"[PLAYBACK] Failed to schedule song end callback: {e}")
+                        # Use stored event loop to schedule task
+                        self.loop.call_soon_threadsafe(
+                            lambda: asyncio.create_task(self._on_song_end(guild_id))
+                        )
+                    except Exception as e:
+                        logger.error(f"[PLAYBACK] Failed to schedule song end callback: {e}")
                 
                 player.voice_client.play(source, after=after_playback)
                 logger.info(f"[PLAYBACK] Skipped to: {next_song.title}")
