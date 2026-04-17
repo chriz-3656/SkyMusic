@@ -293,12 +293,41 @@ class PlaybackFlow:
                 # Play next immediately
                 await self.skip(guild_id)
             
-            elif player.autoplay_enabled:
-                # Trigger autoplay
+            elif player.autoplay_enabled and player.current_track:
+                # Trigger autoplay - fetch recommendations and play
                 logger.info(f"[AUTOPLAY] Triggering autoplay (Guild {guild_id})")
-                if player.autoplay_engine:
-                    # This would be handled by autoplay_commands.py
-                    pass
+                try:
+                    if not player.autoplay_engine:
+                        logger.warning(f"[AUTOPLAY] No autoplay engine available")
+                        return
+                    
+                    # Fetch recommendations based on current track
+                    recommendations = await player.autoplay_engine.get_recommendations(
+                        player.current_track,
+                        limit=8
+                    )
+                    
+                    if recommendations and len(recommendations) > 0:
+                        logger.info(f"[AUTOPLAY] Got {len(recommendations)} recommendations")
+                        
+                        # Add recommendations to queue
+                        for song in recommendations:
+                            player.queue.add(song)
+                        
+                        # Play the first recommendation
+                        logger.info(f"[AUTOPLAY] Playing autoplay recommendation: {recommendations[0].title}")
+                        await self.skip(guild_id)
+                    else:
+                        logger.warning(f"[AUTOPLAY] No recommendations available")
+                        player.current_track = None
+                        player.is_playing = False
+                        player._notify_state_change()
+                
+                except Exception as e:
+                    logger.error(f"[AUTOPLAY] Error fetching recommendations: {e}")
+                    player.current_track = None
+                    player.is_playing = False
+                    player._notify_state_change()
             
             else:
                 # Queue ended
