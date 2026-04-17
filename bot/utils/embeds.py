@@ -1,3 +1,4 @@
+from bot.utils.emojis import MUSIC, PLAY, VOL_UP, SUCCESS, ERROR
 """Embed builder utilities for SkyMusic bot."""
 
 import discord
@@ -64,7 +65,7 @@ def create_now_playing_embed(
         discord.Embed object
     """
     embed = discord.Embed(
-        title="🎧 Now Playing",
+        title=f"{MUSIC} Now Playing",
         description=f"**{title}**",
         color=PURPLE,
         timestamp=datetime.now()
@@ -103,7 +104,7 @@ def create_now_playing_embed(
     
     embed.add_field(
         name="Volume",
-        value=f"🔊 {volume}%",
+        value=f"{VOL_UP} {volume}%",
         inline=True
     )
     
@@ -164,7 +165,7 @@ def create_queue_embed(
         requester = song.get('requester', 'Unknown')
         
         if i == current_index:
-            marker = "▶️"
+            marker = f"{PLAY}"
         else:
             marker = f"{number}."
         
@@ -205,7 +206,7 @@ def create_song_added_embed(
         discord.Embed object
     """
     embed = discord.Embed(
-        title="✅ Added to Queue",
+        title=f"{SUCCESS} Added to Queue",
         description=f"**{title}**",
         color=SUCCESS,
         timestamp=datetime.now()
@@ -252,7 +253,7 @@ def create_error_embed(
         discord.Embed object
     """
     embed = discord.Embed(
-        title=f"❌ {title}",
+        title=f"{ERROR} {title}",
         description=description,
         color=ERROR,
         timestamp=datetime.now()

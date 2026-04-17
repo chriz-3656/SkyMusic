@@ -6,6 +6,7 @@ from discord.ext import commands
 from typing import Optional
 from ..utils.colors import PURPLE, ERROR
 from player.player import Player
+from bot.utils.emojis import SUCCESS
 
 
 class AddSongModal(Modal, title="Add Song to Queue"):
@@ -64,7 +65,7 @@ class AddSongModal(Modal, title="Add Song to Queue"):
             
             # Song was added successfully
             embed = discord.Embed(
-                title="✅ Added to Queue",
+                title=f"{SUCCESS} Added to Queue",
                 description=f"**{song.title}**\n*{song.artist or 'Unknown'}*",
                 color=PURPLE
             )

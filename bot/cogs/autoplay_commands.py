@@ -9,6 +9,7 @@ from player.autoplay import AutoplayEngine
 from state.shared import get_player, get_autoplay_engine
 from bot.utils.embeds import create_info_embed, create_error_embed
 from bot.utils.colors import SUCCESS, ERROR, PURPLE
+from bot.utils.emojis import AUTOPLAY, SUCCESS, ERROR
 
 import logging
 
@@ -83,7 +84,7 @@ class AutoplayCommands(commands.Cog):
             # Create response embed
             if is_enabling:
                 embed = discord.Embed(
-                    title="🔁 Autoplay Enabled",
+                    title=f"{AUTOPLAY} Autoplay Enabled",
                     description="When the queue ends, similar songs will play automatically",
                     color=SUCCESS
                 )
@@ -99,7 +100,7 @@ class AutoplayCommands(commands.Cog):
                 )
             else:
                 embed = discord.Embed(
-                    title="🔁 Autoplay Disabled",
+                    title=f"{AUTOPLAY} Autoplay Disabled",
                     description="Music will stop when the queue ends",
                     color=ERROR
                 )
@@ -125,12 +126,12 @@ class AutoplayCommands(commands.Cog):
         player = get_player(guild_id)
         
         embed = discord.Embed(
-            title="🔁 Autoplay Status",
+            title=f"{AUTOPLAY} Autoplay Status",
             color=PURPLE
         )
         
         # Status
-        status_text = "✅ ENABLED" if is_enabled else "❌ DISABLED"
+        status_text = f"{SUCCESS} ENABLED" if is_enabled else f"{ERROR} DISABLED"
         embed.add_field(name="Status", value=status_text, inline=True)
         
         # Current song

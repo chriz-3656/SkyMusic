@@ -1,3 +1,4 @@
+from bot.utils.emojis import PLAY, PAUSE, MUSIC, VOL_UP, ERROR
 """Interactive control system for SkyMusic bot."""
 
 import discord
@@ -36,7 +37,7 @@ class InteractiveControls(commands.Cog):
         
         # Create now playing embed
         embed = discord.Embed(
-            title="🎵 Now Playing",
+            title=f"{MUSIC} Now Playing",
             description=f"**{song['title']}**\n*{song.get('artist', 'Unknown')}*",
             color=PURPLE
         )
@@ -95,7 +96,7 @@ class InteractiveControls(commands.Cog):
         player = get_player(guild_id)
         if not player or not player.current_song:
             embed = discord.Embed(
-                title="❌ No Song Playing",
+                title=f"{ERROR} No Song Playing",
                 description="Start playing music with /play",
                 color=ERROR
             )
@@ -107,7 +108,7 @@ class InteractiveControls(commands.Cog):
         
         # Create control panel embed
         embed = discord.Embed(
-            title="🎛️ Music Control Panel",
+            title="Music Control Panel",
             description=f"**{song['title']}**\n*{song.get('artist', 'Unknown')}*",
             color=PURPLE
         )
@@ -116,7 +117,7 @@ class InteractiveControls(commands.Cog):
             embed.set_thumbnail(url=song['thumbnail'])
         
         # Status
-        status_text = "🎵 Playing" if not player.is_paused else "⏸️ Paused"
+        status_text = f"{MUSIC} Playing" if not player.is_paused else f"{PAUSE} Paused"
         loop_mode = getattr(player, 'loop_mode', 'off')
         
         embed.add_field(
@@ -127,7 +128,7 @@ class InteractiveControls(commands.Cog):
         
         embed.add_field(
             name="Volume",
-            value=f"{player.volume}% 🔊",
+            value=f"{player.volume}% {VOL_UP}",
             inline=True
         )
         
@@ -159,7 +160,7 @@ class InteractiveControls(commands.Cog):
         song = player.current_song
         
         embed = discord.Embed(
-            title="🎵 Jump Back In",
+            title=f"{MUSIC} Jump Back In",
             description=f"**{song['title']}**\n*{song.get('artist', 'Unknown')}*",
             color=PURPLE
         )
@@ -198,7 +199,7 @@ class JumpBackInView(discord.ui.View):
         super().__init__(timeout=3600)
         self.guild_id = guild_id
     
-    @discord.ui.button(label="▶️ Continue", style=discord.ButtonStyle.success, custom_id="continue_btn")
+    @discord.ui.button(label=f"{PLAY} Continue", style=discord.ButtonStyle.success, custom_id="continue_btn")
     async def continue_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Resume playback."""
         await interaction.response.defer()
@@ -208,7 +209,7 @@ class JumpBackInView(discord.ui.View):
             await player.resume_song()
             
             embed = discord.Embed(
-                title="▶️ Resuming...",
+                title=f"{PLAY} Resuming...",
                 color=SUCCESS
             )
             embed.set_footer(text="🌌 Powered by SkyMusic")

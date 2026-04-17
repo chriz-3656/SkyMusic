@@ -15,6 +15,7 @@ from bot.logger_config import setup_logging
 from player.searcher import Searcher
 from player.autoplay import AutoplayEngine
 from player.autocomplete import SearchAutocomplete
+from bot.utils.emojis import SUCCESS, ERROR
 from state.shared import set_bot, set_autoplay_engine, set_autocomplete_engine
 from api.server import create_app
 
@@ -89,12 +90,12 @@ async def setup_bot():
             try:
                 logger.info("Attempting to sync app commands with Discord...")
                 synced = await bot.tree.sync()
-                logger.info(f"✅ Successfully synced {len(synced)} app commands with Discord:")
+                logger.info(f"{SUCCESS} Successfully synced {len(synced)} app commands with Discord:")
                 for cmd in synced:
                     logger.info(f"  ✓ /{cmd.name}")
                 synced_once = True
             except Exception as e:
-                logger.error(f"❌ Failed to sync commands: {e}", exc_info=True)
+                logger.error(f"{ERROR} Failed to sync commands: {e}", exc_info=True)
                 synced_once = False  # Retry on next ready
         
         # Start presence update task if not already running

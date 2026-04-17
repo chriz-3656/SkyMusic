@@ -19,6 +19,7 @@ from bot.utils.embeds import (
     create_info_embed,
     format_duration
 )
+from bot.utils.emojis import PLAY, PAUSE, STOP, SKIP, MUSIC, AUTOPLAY, VOL_UP
 
 logger = logging.getLogger(__name__)
 
@@ -440,7 +441,7 @@ class MusicCommands(commands.Cog):
         
         # Create enhanced control panel embed with progress bar
         embed = discord.Embed(
-            title="🎛️ Music Control Panel",
+            title="Music Control Panel",
             description=f"**{song.title}**\n*{song.artist or 'Unknown'}*",
             color=0x7C3AED
         )
@@ -449,9 +450,9 @@ class MusicCommands(commands.Cog):
             embed.set_thumbnail(url=song.thumbnail)
         
         # Status line with indicators
-        status_text = "🎵 Playing" if not player.is_paused else "⏸️ Paused"
+        status_text = f"{MUSIC} Playing" if not player.is_paused else f"{PAUSE} Paused"
         loop_mode = getattr(player, 'loop_mode', 'off')
-        autoplay_status = "🔁" if getattr(player, 'autoplay_enabled', False) else "⭕"
+        autoplay_status = "{AUTOPLAY}" if getattr(player, 'autoplay_enabled', False) else "⭕"
         
         embed.add_field(
             name="Status",
@@ -462,7 +463,7 @@ class MusicCommands(commands.Cog):
         # Volume and audio info
         embed.add_field(
             name="Volume",
-            value=f"{player.volume}% 🔊",
+            value=f"{player.volume}% {VOL_UP}",
             inline=True
         )
         
@@ -504,7 +505,7 @@ class NowPlayingView(View):
         self.player = player
         self.bot = bot
     
-    @button(label="Pause", style=discord.ButtonStyle.primary, emoji="⏸️")
+    @button(label="Pause", style=discord.ButtonStyle.primary, emoji=PAUSE)
     async def pause_button(self, interaction: discord.Interaction, button: Button):
         """Pause button callback."""
         await interaction.response.defer()
@@ -515,9 +516,9 @@ class NowPlayingView(View):
         
         self.player.pause()
         button.label = "Resume"
-        await interaction.followup.send("⏸️ Paused", ephemeral=True)
+        await interaction.followup.send(f"{PAUSE} Paused", ephemeral=True)
     
-    @button(label="Skip", style=discord.ButtonStyle.primary, emoji="⏭️")
+    @button(label="Skip", style=discord.ButtonStyle.primary, emoji=SKIP)
     async def skip_button(self, interaction: discord.Interaction, button: Button):
         """Skip button callback."""
         await interaction.response.defer()
@@ -525,13 +526,13 @@ class NowPlayingView(View):
         next_song = await self.player.skip()
         if next_song:
             await interaction.followup.send(
-                f"⏭️ Skipped to: **{next_song.title}**",
+                f"{SKIP} Skipped to: **{next_song.title}**",
                 ephemeral=True
             )
         else:
-            await interaction.followup.send("⏹️ No more songs in queue", ephemeral=True)
+            await interaction.followup.send(f"{STOP} No more songs in queue", ephemeral=True)
     
-    @button(label="Stop", style=discord.ButtonStyle.danger, emoji="⏹️")
+    @button(label="Stop", style=discord.ButtonStyle.danger, emoji=STOP)
     async def stop_button(self, interaction: discord.Interaction, button: Button):
         """Stop button callback."""
         await interaction.response.defer()
@@ -539,7 +540,7 @@ class NowPlayingView(View):
         self.player.stop()
         await self.player.disconnect()
         remove_player(interaction.guild_id)
-        await interaction.followup.send("⏹️ Playback stopped", ephemeral=True)
+        await interaction.followup.send(f"{STOP} Playback stopped", ephemeral=True)
 
 
 async def setup(bot: commands.Bot, searcher: Searcher, autocomplete: SearchAutocomplete = None):

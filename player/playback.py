@@ -4,6 +4,7 @@ Handles complete playback operations through centralized, testable methods.
 """
 
 import asyncio
+from bot.utils.emojis import ERROR, SUCCESS, MUSIC, SKIP, PAUSE, PLAY, STOP
 import logging
 from typing import Optional, Tuple
 import discord
@@ -135,23 +136,23 @@ class PlaybackFlow:
             # Search and create song
             song = await self.search_and_create_song(query, guild_id, requester, requester_id)
             if not song:
-                return False, None, f"❌ No results found for: {query}"
+                return False, None, f"{ERROR} No results found for: {query}"
             
             # Connect to voice channel if not already connected
             if not player.voice_client or not player.voice_client.is_connected():
                 connected = await player.connect(voice_channel)
                 if not connected:
-                    return False, None, f"❌ Could not connect to voice channel"
+                    return False, None, f"{ERROR} Could not connect to voice channel"
             
             # Extract stream URL
             if not song.url:
                 try:
                     song.url = await self.searcher.extract_stream_url(song.video_id or song.title)
                     if not song.url:
-                        return False, None, f"❌ Could not extract stream for: {song.title}"
+                        return False, None, f"{ERROR} Could not extract stream for: {song.title}"
                 except Exception as e:
                     logger.error(f"[PLAYBACK] URL extraction failed: {e}")
-                    return False, None, f"❌ Could not load audio stream"
+                    return False, None, f"{ERROR} Could not load audio stream"
             
             # If nothing is playing, play immediately
             if not player.current_track:
@@ -186,22 +187,22 @@ class PlaybackFlow:
                     player.voice_client.play(source, after=after_playback)
                     logger.info(f"[PLAYBACK] Now playing: {song.title}")
                     player._notify_state_change()
-                    return True, song, f"🎵 Now playing: **{song.title}** by {song.artist}"
+                    return True, song, f"{MUSIC} Now playing: **{song.title}** by {song.artist}"
                 
                 except Exception as e:
                     logger.error(f"[PLAYBACK] Failed to play audio: {e}")
                     player.is_playing = False
-                    return False, song, f"❌ Failed to play audio: {str(e)}"
+                    return False, song, f"{ERROR} Failed to play audio: {str(e)}"
             
             else:
                 # Queue the song
                 position = player.add_to_queue(song)
                 remaining = len(player.queue.get_list()) - 1
-                return True, song, f"✅ Added to queue (Position #{position + 1}, {remaining} songs after)"
+                return True, song, f"{SUCCESS} Added to queue (Position #{position + 1}, {remaining} songs after)"
         
         except Exception as e:
             logger.error(f"[PLAYBACK] Play command failed: {e}")
-            return False, None, f"❌ Error: {str(e)}"
+            return False, None, f"{ERROR} Error: {str(e)}"
     
     async def skip(self, guild_id: int) -> Tuple[bool, Optional[Song], str]:
         """Skip current track and play next.
@@ -212,10 +213,10 @@ class PlaybackFlow:
         try:
             player = self.manager.get_player(guild_id)
             if not player:
-                return False, None, "❌ No player found"
+                return False, None, f"{ERROR} No player found"
             
             if not player.current_track:
-                return False, None, "❌ Nothing is playing"
+                return False, None, f"{ERROR} Nothing is playing"
             
             # Stop current playback
             if player.voice_client and player.voice_client.is_playing():
@@ -232,7 +233,7 @@ class PlaybackFlow:
                 player.is_playing = False
                 logger.info(f"[PLAYBACK] Queue ended (Guild {guild_id})")
                 player._notify_state_change()
-                return True, None, f"⏭️ Skipped **{current_title}** - Queue ended"
+                return True, None, f"{SKIP} Skipped **{current_title}** - Queue ended"
             
             # Play next song
             player.current_track = next_song
@@ -266,15 +267,15 @@ class PlaybackFlow:
                 player.is_paused = False
                 player._notify_state_change()
                 
-                return True, next_song, f"⏭️ Skipped **{current_title}**\n🎵 Now playing: **{next_song.title}**"
+                return True, next_song, f"{SKIP} Skipped **{current_title}**\n{MUSIC} Now playing: **{next_song.title}**"
             
             except Exception as e:
                 logger.error(f"[PLAYBACK] Failed to play next song: {e}")
-                return False, None, f"❌ Failed to play next song: {str(e)}"
+                return False, None, f"{ERROR} Failed to play next song: {str(e)}"
         
         except Exception as e:
             logger.error(f"[PLAYBACK] Skip failed: {e}")
-            return False, None, f"❌ Error: {str(e)}"
+            return False, None, f"{ERROR} Error: {str(e)}"
     
     async def _on_song_end(self, guild_id: int) -> None:
         """Handle song ending - trigger autoplay or next track."""
@@ -318,15 +319,15 @@ class PlaybackFlow:
         try:
             player = self.manager.get_player(guild_id)
             if not player:
-                return False, "❌ No player found"
+                return False, f"{ERROR} No player found"
             
             if player.pause():
-                return True, f"⏸️ Paused: **{player.current_track.title if player.current_track else 'Unknown'}**"
+                return True, f"{PAUSE} Paused: **{player.current_track.title if player.current_track else 'Unknown'}**"
             else:
-                return False, "❌ Nothing to pause"
+                return False, f"{ERROR} Nothing to pause"
         except Exception as e:
             logger.error(f"[PLAYBACK] Pause failed: {e}")
-            return False, f"❌ Error: {str(e)}"
+            return False, f"{ERROR} Error: {str(e)}"
     
     async def resume(self, guild_id: int) -> Tuple[bool, str]:
         """Resume playback.
@@ -337,15 +338,15 @@ class PlaybackFlow:
         try:
             player = self.manager.get_player(guild_id)
             if not player:
-                return False, "❌ No player found"
+                return False, f"{ERROR} No player found"
             
             if player.resume():
-                return True, f"▶️ Resumed: **{player.current_track.title if player.current_track else 'Unknown'}**"
+                return True, f"{PLAY} Resumed: **{player.current_track.title if player.current_track else 'Unknown'}**"
             else:
-                return False, "❌ Nothing to resume"
+                return False, f"{ERROR} Nothing to resume"
         except Exception as e:
             logger.error(f"[PLAYBACK] Resume failed: {e}")
-            return False, f"❌ Error: {str(e)}"
+            return False, f"{ERROR} Error: {str(e)}"
     
     async def stop(self, guild_id: int) -> Tuple[bool, str]:
         """Stop playback and clear queue.
@@ -356,12 +357,12 @@ class PlaybackFlow:
         try:
             player = self.manager.get_player(guild_id)
             if not player:
-                return False, "❌ No player found"
+                return False, f"{ERROR} No player found"
             
             player.stop()
             await player.disconnect()
             self.manager.remove_player(guild_id)
-            return True, "⏹️ Playback stopped and disconnected"
+            return True, f"{STOP} Playback stopped and disconnected"
         except Exception as e:
             logger.error(f"[PLAYBACK] Stop failed: {e}")
-            return False, f"❌ Error: {str(e)}"
+            return False, f"{ERROR} Error: {str(e)}"

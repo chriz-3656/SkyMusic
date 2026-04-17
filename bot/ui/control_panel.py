@@ -1,3 +1,4 @@
+from bot.utils.emojis import PLAY, PAUSE, STOP, SKIP, VOL_UP, AUTOPLAY, QUEUE
 """Control panel view with interactive buttons for music control."""
 
 import discord
@@ -33,7 +34,7 @@ class ControlPanelView(View):
                 if item.name in ('pause_resume', 'skip', 'previous', 'stop', 'queue_btn', 'add_song', 'vol_up', 'vol_down', 'loop_toggle'):
                     item.disabled = not is_playing if item.name != 'add_song' else False
     
-    @button(label="⏮️", style=discord.ButtonStyle.secondary, custom_id="prev_btn", row=0)
+    @button(label=PREV + " ", style=discord.ButtonStyle.secondary, custom_id="prev_btn", row=0)
     async def previous_button(self, interaction: discord.Interaction, button: Button):
         """Previous song button."""
         await interaction.response.defer()
@@ -41,20 +42,20 @@ class ControlPanelView(View):
             await self.player.skip()
             await self._update_panel(interaction)
     
-    @button(label="⏯️", style=discord.ButtonStyle.primary, custom_id="pause_resume_btn", row=0)
+    @button(label=PAUSE + " ", style=discord.ButtonStyle.primary, custom_id="pause_resume_btn", row=0)
     async def pause_resume_button(self, interaction: discord.Interaction, button: Button):
         """Pause/Resume button."""
         await interaction.response.defer()
         if self.player:
             if self.player.is_paused:
                 self.player.resume()
-                button.label = "⏸️"
+                button.label = f"{PAUSE}"
             else:
                 self.player.pause()
-                button.label = "▶️"
+                button.label = f"{PLAY}"
             await self._update_panel(interaction)
     
-    @button(label="⏭️", style=discord.ButtonStyle.secondary, custom_id="skip_btn", row=0)
+    @button(label=f"{SKIP}", style=discord.ButtonStyle.secondary, custom_id="skip_btn", row=0)
     async def skip_button(self, interaction: discord.Interaction, button: Button):
         """Skip to next song."""
         await interaction.response.defer()
@@ -62,7 +63,7 @@ class ControlPanelView(View):
             await self.player.skip()
             await self._update_panel(interaction)
     
-    @button(label="⏹️", style=discord.ButtonStyle.danger, custom_id="stop_btn", row=0)
+    @button(label=f"{STOP}", style=discord.ButtonStyle.danger, custom_id="stop_btn", row=0)
     async def stop_button(self, interaction: discord.Interaction, button: Button):
         """Stop playback."""
         await interaction.response.defer()
@@ -70,7 +71,7 @@ class ControlPanelView(View):
             self.player.stop()
             await self._update_panel(interaction)
     
-    @button(label="📜 Queue", style=discord.ButtonStyle.secondary, custom_id="queue_btn", row=1)
+    @button(label=f"{QUEUE} Queue", style=discord.ButtonStyle.secondary, custom_id="queue_btn", row=1)
     async def queue_button(self, interaction: discord.Interaction, button: Button):
         """Show queue."""
         await interaction.response.defer()
@@ -93,7 +94,7 @@ class ControlPanelView(View):
         
         if self.player.current_song:
             embed.add_field(
-                name="▶️ Now Playing",
+                name=f"{PLAY} Now Playing",
                 value=f"**{self.player.current_song.title}**\n*{self.player.current_song.artist or 'Unknown'}*",
                 inline=False
             )
@@ -139,7 +140,7 @@ class ControlPanelView(View):
         """Volume display (informational)."""
         pass
     
-    @button(label="🔊", style=discord.ButtonStyle.secondary, custom_id="vol_up_btn", row=2)
+    @button(label=f"{VOL_UP}", style=discord.ButtonStyle.secondary, custom_id="vol_up_btn", row=2)
     async def volume_up_button(self, interaction: discord.Interaction, button: Button):
         """Volume up."""
         await interaction.response.defer()
@@ -148,7 +149,7 @@ class ControlPanelView(View):
             await self.player.set_volume(new_volume)
             await self._update_panel(interaction)
     
-    @button(label="🔁 Off", style=discord.ButtonStyle.secondary, custom_id="loop_btn", row=3)
+    @button(label=f"{AUTOPLAY} Off", style=discord.ButtonStyle.secondary, custom_id="loop_btn", row=3)
     async def loop_button(self, interaction: discord.Interaction, button: Button):
         """Toggle loop mode."""
         await interaction.response.defer()
@@ -159,17 +160,17 @@ class ControlPanelView(View):
             
             if self.player.loop_mode == 'off':
                 self.player.loop_mode = 'song'
-                button.label = "🔁 Song"
+                button.label = f"{AUTOPLAY} Song"
             elif self.player.loop_mode == 'song':
                 self.player.loop_mode = 'queue'
-                button.label = "🔁 Queue"
+                button.label = f"{AUTOPLAY} Queue"
             else:
                 self.player.loop_mode = 'off'
-                button.label = "🔁 Off"
+                button.label = "{AUTOPLAY} Off"
             
             await self._update_panel(interaction)
     
-    @button(label="❤️", style=discord.ButtonStyle.secondary, custom_id="fav_btn", row=3)
+    @button(label=FAV + " ", style=discord.ButtonStyle.secondary, custom_id="fav_btn", row=3)
     async def favorite_button(self, interaction: discord.Interaction, button: Button):
         """Add current song to favorites."""
         await interaction.response.defer()
@@ -181,7 +182,7 @@ class ControlPanelView(View):
             if song_id not in self.player.favorites:
                 self.player.favorites.append(song_id)
                 embed = discord.Embed(
-                    title="Added to Favorites ❤️",
+                    title="Added to Favorites FAV",
                     description=f"**{self.player.current_song.title}**",
                     color=SUCCESS
                 )
@@ -208,7 +209,7 @@ class ControlPanelView(View):
             
             # Update pause/resume button label
             if hasattr(item, 'custom_id') and item.custom_id == 'pause_resume_btn':
-                item.label = "⏸️" if self.player.is_playing and not self.player.is_paused else "▶️"
+                item.label = f"{PAUSE}" if self.player.is_playing and not self.player.is_paused else f"{PLAY}"
         
         self._update_button_states()
         
