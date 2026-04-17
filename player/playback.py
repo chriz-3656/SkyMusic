@@ -85,22 +85,12 @@ class PlaybackFlow:
             logger.info(f"[SEARCH] Searching for: {query}")
             
             # Try to search/extract (pass requester to Searcher)
-            result = await self.searcher.search(query, requester)
+            # searcher.search() returns a Song object directly
+            song = await self.searcher.search(query, requester)
             
-            if not result:
+            if not song:
                 logger.warning(f"[SEARCH] No results for: {query}")
                 return None
-            
-            # Create song with available metadata
-            song = Song(
-                title=result.get('title', query),
-                artist=result.get('artist', 'Unknown'),
-                url=result.get('url', ''),
-                duration=result.get('duration', 0),
-                requester=requester,
-                thumbnail=result.get('thumbnail'),
-                video_id=result.get('video_id'),
-            )
             
             # Enrich metadata if needed
             await self.enrich_song_metadata(song)
