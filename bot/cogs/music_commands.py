@@ -142,7 +142,7 @@ class MusicCommands(commands.Cog):
                     
                     # Get player for view
                     player = get_player(guild_id)
-                    view = NowPlayingView(player, self.bot) if player else None
+                    view = NowPlayingView(player, self.bot, self.playback_flow) if player else None
                     await interaction.followup.send(embed=embed, view=view)
                 else:
                     embed = create_error_embed(
@@ -271,7 +271,7 @@ class MusicCommands(commands.Cog):
                 song_info = "Playback has been paused"
             
             embed = create_info_embed("Playback Paused", song_info)
-            view = NowPlayingView(player, self.bot)
+            view = NowPlayingView(player, self.bot, self.playback_flow)
             await interaction.followup.send(embed=embed, view=view)
         
         except Exception as e:
@@ -300,7 +300,7 @@ class MusicCommands(commands.Cog):
                 song_info = "Playback has been resumed"
             
             embed = create_info_embed("Playback Resumed", song_info)
-            view = NowPlayingView(player, self.bot)
+            view = NowPlayingView(player, self.bot, self.playback_flow)
             await interaction.followup.send(embed=embed, view=view)
         
         except Exception as e:
@@ -327,7 +327,7 @@ class MusicCommands(commands.Cog):
                     f"Now playing: **{next_song.title}** by {next_song.artist}"
                 )
                 player = get_player(interaction.guild_id)
-                view = NowPlayingView(player, self.bot) if player else None
+                view = NowPlayingView(player, self.bot, self.playback_flow) if player else None
                 await interaction.followup.send(embed=embed, view=view)
             else:
                 embed = create_info_embed(
@@ -401,7 +401,7 @@ class MusicCommands(commands.Cog):
                 page_size=5
             )
             
-            view = NowPlayingView(player, self.bot)
+            view = NowPlayingView(player, self.bot, self.playback_flow)
             await interaction.followup.send(embed=embed, view=view)
         
         except Exception as e:
@@ -500,10 +500,11 @@ class MusicCommands(commands.Cog):
 class NowPlayingView(View):
     """Interactive buttons for music control."""
     
-    def __init__(self, player: Player, bot: commands.Bot):
+    def __init__(self, player: Player, bot: commands.Bot, playback_flow: PlaybackFlow = None):
         super().__init__(timeout=None)
         self.player = player
         self.bot = bot
+        self.playback_flow = playback_flow
     
     @button(label="Pause", style=discord.ButtonStyle.primary, emoji=PAUSE)
     async def pause_button(self, interaction: discord.Interaction, button: Button):
@@ -523,24 +524,30 @@ class NowPlayingView(View):
         """Skip button callback."""
         await interaction.response.defer()
         
-        next_song = await self.player.skip()
-        if next_song:
-            await interaction.followup.send(
-                f"{SKIP} Skipped to: **{next_song.title}**",
-                ephemeral=True
-            )
-        else:
-            await interaction.followup.send(f"{STOP} No more songs in queue", ephemeral=True)
+        try:
+            if not self.playback_flow:
+                await interaction.followup.send(f"{STOP} Playback system not available", ephemeral=True)
+                return
+            
+            success, next_song, message = await self.playback_flow.skip(interaction.guild_id)
+            await interaction.followup.send(message, ephemeral=True)
+        except Exception as e:
+            logger.error(f"Skip button error: {e}", exc_info=True)
+            await interaction.followup.send(f"{STOP} Error skipping track", ephemeral=True)
     
     @button(label="Stop", style=discord.ButtonStyle.danger, emoji=STOP)
     async def stop_button(self, interaction: discord.Interaction, button: Button):
         """Stop button callback."""
         await interaction.response.defer()
         
-        self.player.stop()
-        await self.player.disconnect()
-        remove_player(interaction.guild_id)
-        await interaction.followup.send(f"{STOP} Playback stopped", ephemeral=True)
+        try:
+            self.player.stop()
+            await self.player.disconnect()
+            remove_player(interaction.guild_id)
+            await interaction.followup.send(f"{STOP} Playback stopped", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Stop button error: {e}", exc_info=True)
+            await interaction.followup.send(f"{STOP} Error stopping playback", ephemeral=True)
 
 
 async def setup(bot: commands.Bot, searcher: Searcher, autocomplete: SearchAutocomplete = None):
