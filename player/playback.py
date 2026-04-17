@@ -169,7 +169,16 @@ class PlaybackFlow:
                     def after_playback(error):
                         if error:
                             logger.error(f"[PLAYBACK] Playback error: {error}")
-                        asyncio.create_task(self._on_song_end(guild_id))
+                        try:
+                            # Schedule async task safely
+                            asyncio.create_task(self._on_song_end(guild_id))
+                        except RuntimeError:
+                            # If no event loop, try to get the running loop
+                            try:
+                                loop = asyncio.get_running_loop()
+                                loop.create_task(self._on_song_end(guild_id))
+                            except RuntimeError as e:
+                                logger.error(f"[PLAYBACK] Failed to schedule song end callback: {e}")
                     
                     player.voice_client.play(source, after=after_playback)
                     logger.info(f"[PLAYBACK] Now playing: {song.title}")
@@ -240,7 +249,16 @@ class PlaybackFlow:
                 def after_playback(error):
                     if error:
                         logger.error(f"[PLAYBACK] Playback error: {error}")
-                    asyncio.create_task(self._on_song_end(guild_id))
+                    try:
+                        # Schedule async task safely
+                        asyncio.create_task(self._on_song_end(guild_id))
+                    except RuntimeError:
+                        # If no event loop, try to get the running loop
+                        try:
+                            loop = asyncio.get_running_loop()
+                            loop.create_task(self._on_song_end(guild_id))
+                        except RuntimeError as e:
+                            logger.error(f"[PLAYBACK] Failed to schedule song end callback: {e}")
                 
                 player.voice_client.play(source, after=after_playback)
                 logger.info(f"[PLAYBACK] Skipped to: {next_song.title}")
