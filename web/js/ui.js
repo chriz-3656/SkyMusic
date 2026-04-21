@@ -82,6 +82,7 @@ const UI = (() => {
     }
 
     return {
+        DOM,
         init: initDOM,
         formatTime,
         formatNumber,
