@@ -21,7 +21,19 @@ const APP = (() => {
         console.log('⏱️ Poll Interval:', POLL_INTERVAL, 'ms');
         
         // Initialize modules
+        console.log('🔧 Initializing UI module...');
+        if (!UI) {
+            console.error('❌ UI module not loaded!');
+            return;
+        }
+        
+        if (typeof UI.init !== 'function') {
+            console.error('❌ UI.init is not a function!');
+            return;
+        }
+        
         UI.init();
+        console.log('✅ UI module initialized. DOM object:', UI.DOM);
 
         // Set up event listeners
         setupEventListeners();
@@ -43,6 +55,12 @@ const APP = (() => {
      * Set up all event listeners
      */
     function setupEventListeners() {
+        // Debug: Check if UI.DOM is available
+        if (!UI || !UI.DOM) {
+            console.error('❌ UI.DOM not initialized. UI:', UI);
+            return;
+        }
+        
         // Playback controls
         if (UI.DOM.pauseBtn) {
             UI.DOM.pauseBtn.addEventListener('click', async () => {
