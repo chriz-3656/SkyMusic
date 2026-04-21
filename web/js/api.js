@@ -16,11 +16,13 @@ const API = (() => {
         const cacheKey = `${options.method || 'GET'}:${endpoint}`;
         const now = Date.now();
 
-        // Return cached result if valid
-        if (cache.has(cacheKey)) {
-            const cached = cache.get(cacheKey);
-            if (now - cached.timestamp < CACHE_DURATION) {
-                return cached.data;
+        // Return cached result if valid (only for GET requests)
+        if (!options.method || options.method === 'GET') {
+            if (cache.has(cacheKey)) {
+                const cached = cache.get(cacheKey);
+                if (now - cached.timestamp < CACHE_DURATION) {
+                    return cached.data;
+                }
             }
         }
 
@@ -36,13 +38,20 @@ const API = (() => {
             });
 
             if (!response.ok) {
-                console.error(`API Error [${endpoint}]: HTTP ${response.status}`);
+                console.error(`API Error [${endpoint}]: HTTP ${response.status} ${response.statusText}`);
+                // Try to parse error message
+                try {
+                    const error = await response.json();
+                    console.error('Error details:', error);
+                } catch (e) {
+                    // Couldn't parse error
+                }
                 return null;
             }
 
             const data = await response.json();
 
-            // Cache successful GET requests
+            // Cache successful GET requests only
             if (!options.method || options.method === 'GET') {
                 cache.set(cacheKey, { data, timestamp: now });
             }
@@ -50,6 +59,11 @@ const API = (() => {
             return data;
         } catch (error) {
             console.error(`API Error [${endpoint}]:`, error.message);
+            // Return cached data if available even if expired (fallback)
+            if (cache.has(cacheKey)) {
+                console.warn(`Returning cached data for ${endpoint}`);
+                return cache.get(cacheKey).data;
+            }
             return null;
         }
     }

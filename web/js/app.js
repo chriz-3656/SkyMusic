@@ -4,17 +4,21 @@
  */
 
 const APP = (() => {
-    const POLL_INTERVAL = 2000; // Update every 2 seconds
+    const POLL_INTERVAL = 3000; // Update every 3 seconds
     let updateInterval = null;
     let autoplayStatus = false;
     let currentLoopMode = 0;
     let currentShuffleStatus = false;
+    let updateCount = 0;
+    let lastUpdateTime = 0;
 
     /**
      * Initialize the application
      */
     async function init() {
         console.log('🎵 SkyMusic Dashboard V6 initializing...');
+        console.log('📡 API Base URL:', '/api');
+        console.log('⏱️ Poll Interval:', POLL_INTERVAL, 'ms');
         
         // Initialize modules
         UI.init();
@@ -32,6 +36,7 @@ const APP = (() => {
         startPolling();
 
         console.log('✅ SkyMusic Dashboard ready');
+        console.log('📊 Live updates enabled - fetching every', POLL_INTERVAL/1000, 'seconds');
     }
 
     /**
@@ -179,55 +184,80 @@ const APP = (() => {
      * Update entire UI
      */
     async function updateUI() {
+        updateCount++;
+        const timeNow = Date.now();
+        const timeSinceLastUpdate = timeNow - lastUpdateTime;
+        lastUpdateTime = timeNow;
+        
         try {
-            const [nowPlayingData, queueData, botStats] = await Promise.all([
+            // Fetch all data in parallel with error handling
+            const [nowPlayingData, queueData, botStats] = await Promise.allSettled([
                 API.getNowPlaying(),
                 API.getQueue(),
                 API.getBotStats()
             ]);
 
-            // Update now playing
-            if (nowPlayingData) {
-                currentState.isPlaying = nowPlayingData.is_playing;
-                currentState.isPaused = nowPlayingData.is_paused;
-                currentState.position = nowPlayingData.position || 0;
-                currentState.song = nowPlayingData.song;
+            // Log update (every 10 updates to reduce spam)
+            if (updateCount % 10 === 0) {
+                console.log(`🔄 Update #${updateCount} (Δt: ${timeSinceLastUpdate}ms)`);
+            }
 
-                UI.updateNowPlaying(nowPlayingData);
-                UI.updateControls(nowPlayingData);
+            // Update now playing
+            if (nowPlayingData.status === 'fulfilled' && nowPlayingData.value) {
+                const data = nowPlayingData.value;
+                currentState.isPlaying = data.is_playing;
+                currentState.isPaused = data.is_paused;
+                currentState.position = data.position || 0;
+                currentState.song = data.song;
+
+                UI.updateNowPlaying(data);
+                UI.updateControls(data);
 
                 // Check if favorited
-                if (nowPlayingData.song) {
-                    const isFav = Storage.favorites.has(nowPlayingData.song);
-                    UI.updateLikeStatus(nowPlayingData.song, isFav);
+                if (data.song) {
+                    const isFav = Storage.favorites.has(data.song);
+                    UI.updateLikeStatus(data.song, isFav);
                     
                     // Add to history if playing
-                    if (nowPlayingData.is_playing) {
-                        Storage.history.add(nowPlayingData.song);
+                    if (data.is_playing) {
+                        Storage.history.add(data.song);
                     }
                 }
 
                 // Connection status
-                const connected = nowPlayingData.is_playing || !!nowPlayingData.song;
+                const connected = data.is_playing || !!data.song;
                 if (connected !== currentState.connected) {
                     currentState.connected = connected;
                     UI.setStatus(connected);
+                    console.log('🔗 Connection status changed to:', connected ? 'CONNECTED' : 'DISCONNECTED');
                 }
+            } else if (nowPlayingData.status === 'rejected') {
+                console.warn('❌ Failed to fetch now playing:', nowPlayingData.reason);
+                UI.setStatus(false);
             }
 
             // Update queue
-            if (queueData) {
-                currentState.queue = queueData.queue || [];
-                UI.updateQueue(queueData);
+            if (queueData.status === 'fulfilled' && queueData.value) {
+                const data = queueData.value;
+                currentState.queue = data.queue || [];
+                UI.updateQueue(data);
+                if (updateCount % 10 === 0) {
+                    console.log('📋 Queue updated:', data.queue.length, 'songs');
+                }
+            } else if (queueData.status === 'rejected') {
+                console.warn('❌ Failed to fetch queue:', queueData.reason);
             }
 
             // Update stats
-            if (botStats) {
-                UI.updateBotStats(botStats);
+            if (botStats.status === 'fulfilled' && botStats.value) {
+                UI.updateBotStats(botStats.value);
+            } else if (botStats.status === 'rejected') {
+                console.warn('❌ Failed to fetch bot stats:', botStats.reason);
             }
 
         } catch (err) {
-            console.error('UI update error:', err);
+            console.error('❌ UI update error:', err);
+            UI.setStatus(false);
         }
     }
 
@@ -236,7 +266,13 @@ const APP = (() => {
      */
     function startPolling() {
         if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(updateUI, POLL_INTERVAL);
+        console.log('▶️  Starting polling with interval:', POLL_INTERVAL, 'ms');
+        updateInterval = setInterval(() => {
+            updateUI().catch(err => {
+                console.error('Polling update error:', err);
+            });
+        }, POLL_INTERVAL);
+        console.log('✅ Polling started. Poll interval ID:', updateInterval);
     }
 
     /**
