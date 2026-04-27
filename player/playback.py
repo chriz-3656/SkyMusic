@@ -166,8 +166,8 @@ class PlaybackFlow:
                     source = discord.PCMVolumeTransformer(
                         discord.FFmpegPCMAudio(
                             song.url,
-                            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
-                            options="-vn -ac 2 -ar 48000"
+                            before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
+                            options="-vn -c:a pcm_s16le -ar 48000 -ac 2"
                         )
                     )
                     source.volume = player.volume / 100.0
@@ -251,12 +251,12 @@ class PlaybackFlow:
                 return False, None, f"{ERROR} Could not extract audio stream for: {next_song.title}"
             
             try:
-                # Added reconnect flags for better stability
+                # Added reconnect flags for better stability and quality
                 source = discord.PCMVolumeTransformer(
                     discord.FFmpegPCMAudio(
                         next_song.url,
-                        before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
-                        options="-vn -ac 2 -ar 48000"
+                        before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
+                        options="-vn -c:a pcm_s16le -ar 48000 -ac 2"
                     )
                 )
                 source.volume = player.volume / 100.0

@@ -22,6 +22,12 @@ class Searcher:
             'no_warnings': True,
             'default_search': 'ytsearch',
             'extract_flat': False,
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
+            'logtostderr': False,
+            'no_color': True,
+            'no_warnings': True,
+            'source_address': '0.0.0.0', # bind to ipv4 since ipv6 can cause issues
         }
     
     async def search(self, query: str, requester: str) -> Optional[Song]:
