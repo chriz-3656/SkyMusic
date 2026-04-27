@@ -166,7 +166,7 @@ class PlaybackFlow:
                     source = discord.PCMVolumeTransformer(
                         discord.FFmpegPCMAudio(
                             song.url,
-                            before_options="-hide_banner -nostats -loglevel quiet",
+                            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
                             options="-vn -ac 2 -ar 48000"
                         )
                     )
@@ -239,11 +239,23 @@ class PlaybackFlow:
             player.current_track = next_song
             player._playback_start_time = asyncio.get_event_loop().time()
             
+            # Ensure next song has a URL
+            if not next_song.url:
+                try:
+                    logger.info(f"[PLAYBACK] Extracting URL for: {next_song.title}")
+                    next_song.url = await self.searcher.extract_stream_url(next_song.video_id or next_song.title)
+                except Exception as e:
+                    logger.error(f"[PLAYBACK] Failed to extract URL for next song: {e}")
+            
+            if not next_song.url:
+                return False, None, f"{ERROR} Could not extract audio stream for: {next_song.title}"
+            
             try:
+                # Added reconnect flags for better stability
                 source = discord.PCMVolumeTransformer(
                     discord.FFmpegPCMAudio(
                         next_song.url,
-                        before_options="-hide_banner -nostats -loglevel quiet",
+                        before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
                         options="-vn -ac 2 -ar 48000"
                     )
                 )
@@ -310,35 +322,15 @@ class PlaybackFlow:
                     if recommendations and len(recommendations) > 0:
                         logger.info(f"[AUTOPLAY] Got {len(recommendations)} recommendations")
                         
-                        # Extract stream URLs for all recommendations before adding to queue
-                        valid_recommendations = []
+                        # Add recommendations directly to queue (URL extraction happens JIT in skip)
                         for song in recommendations:
-                            try:
-                                if not song.url:
-                                    song.url = await self.searcher.extract_stream_url(song.video_id or song.title)
-                                    logger.info(f"[AUTOPLAY] Extracted URL for: {song.title}")
-                                if song.url:
-                                    valid_recommendations.append(song)
-                                else:
-                                    logger.warning(f"[AUTOPLAY] Could not extract URL for: {song.title}")
-                            except Exception as e:
-                                logger.warning(f"[AUTOPLAY] Failed to extract URL for {song.title}: {e}")
+                            player.queue.add(song)
+                            
+                        logger.info(f"[AUTOPLAY] Added {len(recommendations)} recommendations to queue")
                         
-                        if valid_recommendations:
-                            # Add validated recommendations to queue
-                            for song in valid_recommendations:
-                                player.queue.add(song)
-                            
-                            logger.info(f"[AUTOPLAY] Added {len(valid_recommendations)} valid recommendations to queue")
-                            
-                            # Play the first recommendation
-                            logger.info(f"[AUTOPLAY] Playing autoplay recommendation: {valid_recommendations[0].title}")
-                            await self.skip(guild_id)
-                        else:
-                            logger.warning(f"[AUTOPLAY] No valid recommendations with playable URLs")
-                            player.current_track = None
-                            player.is_playing = False
-                            player._notify_state_change()
+                        # Play the first recommendation
+                        logger.info(f"[AUTOPLAY] Playing autoplay recommendation: {recommendations[0].title}")
+                        await self.skip(guild_id)
                     else:
                         logger.warning(f"[AUTOPLAY] No recommendations available")
                         player.current_track = None
