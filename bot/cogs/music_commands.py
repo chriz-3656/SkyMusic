@@ -97,13 +97,25 @@ class MusicCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
-            # Use interaction.user directly as it's already a Member object in guilds
+            # Use interaction.user directly
             member = interaction.user
             
-            if not isinstance(member, discord.Member) or not member.voice or not member.voice.channel:
+            # Debug logging for troubleshooting multi-server issues
+            logger.info(f"Command /play invoked by {member} in Guild {interaction.guild_id}")
+            
+            if not isinstance(member, discord.Member):
+                # This can happen in DMs or if member data isn't available
+                embed = create_error_embed(
+                    "Command Error",
+                    "This command can only be used in a server."
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            if not member.voice or not member.voice.channel:
                 embed = create_error_embed(
                     "Not in Voice Channel",
-                    "You must be in a voice channel to use this command!"
+                    "You must be in a voice channel so I can join you! If you ARE in a channel, please ensure the bot has 'Voice State Intent' enabled in the Developer Portal."
                 )
                 await interaction.followup.send(embed=embed)
                 return
