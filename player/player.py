@@ -4,8 +4,8 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from .queue import Queue, Song
-from .searcher import Searcher
+from player.queue import Queue, Song
+from player.searcher import Searcher
 
 logger = logging.getLogger(__name__)
 

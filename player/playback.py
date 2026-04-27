@@ -9,10 +9,10 @@ import logging
 from typing import Optional, Tuple
 import discord
 
-from .queue import Song
-from .manager import PlayerManager, PlayerInstance
-from .searcher import Searcher
-from .progress import format_duration
+from player.queue import Song
+from player.manager import PlayerManager, PlayerInstance
+from player.searcher import Searcher
+from player.progress import format_duration
 
 logger = logging.getLogger(__name__)
 

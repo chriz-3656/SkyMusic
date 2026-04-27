@@ -6,7 +6,7 @@ from typing import Optional
 import time
 
 from state.shared import get_player, get_bot, get_all_players
-from .models import (
+from api.models import (
     NowPlayingResponse, QueueResponse, QueueItemResponse,
     SongResponse, StatusResponse, ActionResponse, BotStatsResponse,
     VolumeRequest, AutoplayRequest, LoopRequest

@@ -2,7 +2,7 @@
 
 import logging
 from typing import Dict, List, Set, Tuple
-from . import emojis
+from bot.utils import emojis
 
 logger = logging.getLogger(__name__)
 

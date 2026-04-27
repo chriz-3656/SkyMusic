@@ -4,10 +4,10 @@ from bot.utils.emojis import MUSIC, PAUSE, PLAY, SEARCH, VOL_UP
 import discord
 from discord.ext import commands, tasks
 from typing import Optional
-from ..ui.control_panel import ControlPanelView
-from .music_commands import NowPlayingView
-from ..ui.state import get_panel_manager
-from ..utils import colors
+from bot.ui.control_panel import ControlPanelView
+from bot.cogs.music_commands import NowPlayingView
+from bot.ui.state import get_panel_manager
+from bot.utils import colors
 from state.shared import get_player, get_bot
 
 
@@ -93,7 +93,7 @@ class InteractiveControls(commands.Cog):
         # Add metadata
         duration = song.get('duration', 0)
         if duration:
-            from ..utils.embeds import format_duration
+            from bot.utils.embeds import format_duration
             embed.add_field(
                 name="Duration",
                 value=format_duration(duration),
@@ -263,7 +263,7 @@ class JumpBackInView(discord.ui.View):
     @discord.ui.button(label="Search", style=discord.ButtonStyle.secondary, custom_id="search_jump_btn")
     async def search_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Open search modal."""
-        from ..ui.modals import SearchModal
+        from bot.ui.modals import SearchModal
         modal = SearchModal(self.guild_id)
         await interaction.response.send_modal(modal)
 

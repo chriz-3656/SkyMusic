@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from typing import Optional, List
-from .queue import Song
+from player.queue import Song
 
 logger = logging.getLogger(__name__)
 

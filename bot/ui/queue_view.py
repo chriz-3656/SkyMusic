@@ -1,11 +1,11 @@
-from ..utils.emojis import PLAY, SKIP, MUSIC, PREV
+from bot.utils.emojis import PLAY, SKIP, MUSIC, PREV
 """Queue view with select menu for song navigation."""
 
 import discord
 from discord.ui import View, Select, select
 from discord.ext import commands
 from typing import Optional
-from ..utils.colors import PURPLE, ERROR
+from bot.utils.colors import PURPLE, ERROR
 from state.shared import get_player
 
 

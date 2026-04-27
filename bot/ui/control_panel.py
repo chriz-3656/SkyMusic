@@ -4,9 +4,9 @@ import discord
 from discord.ui import View, Button, button
 from discord.ext import commands
 from typing import Optional, Callable
-from ..utils.colors import PURPLE, SUCCESS, ERROR
-from ..utils.emojis import ADD, AUTOPLAY, FAV, PAUSE, PLAY, PREV, QUEUE, SEARCH, SKIP, STOP, VOL_DOWN, VOL_UP
-from .progress_bar import create_progress_line
+from bot.utils.colors import PURPLE, SUCCESS, ERROR
+from bot.utils.emojis import ADD, AUTOPLAY, FAV, PAUSE, PLAY, PREV, QUEUE, SEARCH, SKIP, STOP, VOL_DOWN, VOL_UP
+from bot.ui.progress_bar import create_progress_line
 
 
 class ControlPanelView(View):
@@ -116,14 +116,14 @@ class ControlPanelView(View):
     @button(emoji=ADD, style=discord.ButtonStyle.success, custom_id="add_song_btn", row=1)
     async def add_song_button(self, interaction: discord.Interaction, button: Button):
         """Open add song modal."""
-        from .modals import AddSongModal
+        from bot.ui.modals import AddSongModal
         modal = AddSongModal(self.player)
         await interaction.response.send_modal(modal)
     
     @button(emoji=SEARCH, style=discord.ButtonStyle.secondary, custom_id="search_btn", row=1)
     async def search_button(self, interaction: discord.Interaction, button: Button):
         """Open search modal."""
-        from .modals import SearchModal
+        from bot.ui.modals import SearchModal
         modal = SearchModal(self.player)
         await interaction.response.send_modal(modal)
     

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 from bot.utils.emojis import MUSIC, ARTIST, ALBUM, TIME, LIVE, PLAY, PAUSE
 from bot.utils import colors
-from ..ui.progress_bar import create_progress_line, format_time
+from bot.ui.progress_bar import create_progress_line, format_time
 
 
 def create_rythm_now_playing_embed(

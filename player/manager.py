@@ -10,9 +10,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import discord
 
-from .queue import Queue, Song
-from .searcher import Searcher
-from .autoplay import AutoplayEngine
+from player.queue import Queue, Song
+from player.searcher import Searcher
+from player.autoplay import AutoplayEngine
 
 logger = logging.getLogger(__name__)
 

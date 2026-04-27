@@ -4,7 +4,7 @@ import discord
 from discord.ui import Modal, TextInput
 from discord.ext import commands
 from typing import Optional
-from ..utils.colors import PURPLE, ERROR
+from bot.utils.colors import PURPLE, ERROR
 from player.player import Player
 from bot.utils.emojis import SUCCESS, SEARCH
 
@@ -77,7 +77,7 @@ class AddSongModal(Modal, title="Add Song to Queue"):
             embed.add_field(name="Position", value=f"#{queue_pos} in queue", inline=True)
             
             if song.duration:
-                from ..utils.embeds import format_duration
+                from bot.utils.embeds import format_duration
                 embed.add_field(name="Duration", value=format_duration(song.duration), inline=True)
             
             embed.set_footer(text="Powered by SkyMusic")

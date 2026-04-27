@@ -4,9 +4,9 @@ from bot.utils.emojis import MUSIC, PLAY, QUEUE, VOL_UP
 import discord
 from datetime import datetime
 from typing import Optional, List
-from . import colors
-from .colors import FOOTER_TEXT
-from ..ui.progress_bar import create_progress_line, format_time
+from bot.utils import colors
+from bot.utils.colors import FOOTER_TEXT
+from bot.ui.progress_bar import create_progress_line, format_time
 
 def format_duration(seconds: int) -> str:
     """Format seconds to MM:SS format."""

@@ -1,8 +1,8 @@
 """UI components for SkyMusic bot."""
 
-from .control_panel import ControlPanelView
-from .modals import AddSongModal, SearchModal
-from .queue_view import QueueView
+from bot.ui.control_panel import ControlPanelView
+from bot.ui.modals import AddSongModal, SearchModal
+from bot.ui.queue_view import QueueView
 
 __all__ = [
     "ControlPanelView",

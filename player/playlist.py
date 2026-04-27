@@ -5,7 +5,7 @@ import asyncio
 import re
 from typing import Optional, List
 from ytmusicapi import YTMusic
-from .queue import Song
+from player.queue import Song
 
 logger = logging.getLogger(__name__)
 

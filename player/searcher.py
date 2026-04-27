@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 from ytmusicapi import YTMusic
 from yt_dlp import YoutubeDL
-from .queue import Song
+from player.queue import Song
 
 logger = logging.getLogger(__name__)
 
