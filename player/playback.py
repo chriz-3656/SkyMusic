@@ -167,7 +167,7 @@ class PlaybackFlow:
                         discord.FFmpegPCMAudio(
                             song.url,
                             before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
-                            options="-vn -c:a pcm_s16le -ar 48000 -ac 2"
+                            options="-vn -c:a pcm_s16le -ar 48000 -ac 2 -reconnect_on_network_error 1 -tcp_nodelay 1"
                         )
                     )
                     source.volume = player.volume / 100.0
@@ -256,7 +256,7 @@ class PlaybackFlow:
                     discord.FFmpegPCMAudio(
                         next_song.url,
                         before_options="-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 -hide_banner -nostats -loglevel quiet",
-                        options="-vn -c:a pcm_s16le -ar 48000 -ac 2"
+                        options="-vn -c:a pcm_s16le -ar 48000 -ac 2 -reconnect_on_network_error 1 -tcp_nodelay 1"
                     )
                 )
                 source.volume = player.volume / 100.0
