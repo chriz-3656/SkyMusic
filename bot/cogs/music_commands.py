@@ -97,11 +97,10 @@ class MusicCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
-            # Get guild and member to check voice state
-            guild = interaction.guild
-            member = guild.get_member(interaction.user.id) if guild else None
+            # Use interaction.user directly as it's already a Member object in guilds
+            member = interaction.user
             
-            if not member or not member.voice or not member.voice.channel:
+            if not isinstance(member, discord.Member) or not member.voice or not member.voice.channel:
                 embed = create_error_embed(
                     "Not in Voice Channel",
                     "You must be in a voice channel to use this command!"
