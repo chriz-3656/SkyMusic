@@ -85,6 +85,7 @@ class PlayerInstance:
         
         # UI
         self.control_panel_message: Optional[discord.Message] = None
+        self.last_text_channel_id: Optional[int] = None
         
         # Callbacks for state changes
         self.state_change_callbacks: List[Callable[[StateSnapshot], None]] = []

@@ -13,6 +13,8 @@ from player.queue import Song
 from player.manager import PlayerManager, PlayerInstance
 from player.searcher import Searcher
 from player.progress import format_duration
+from state.shared import get_bot
+from bot.utils.embeds import create_now_playing_embed
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +189,10 @@ class PlaybackFlow:
                     player.voice_client.play(source, after=after_playback)
                     logger.info(f"[PLAYBACK] Now playing: {song.title}")
                     player._notify_state_change()
+                    
+                    # Automatic announcement
+                    asyncio.create_task(self._announce_now_playing(player, song))
+                    
                     return True, song, f"{MUSIC} Now playing: **{song.title}** by {song.artist}"
                 
                 except Exception as e:
@@ -278,6 +284,9 @@ class PlaybackFlow:
                 player.is_playing = True
                 player.is_paused = False
                 player._notify_state_change()
+                
+                # Automatic announcement
+                asyncio.create_task(self._announce_now_playing(player, next_song))
                 
                 return True, next_song, f"{SKIP} Skipped **{current_title}**\n{MUSIC} Now playing: **{next_song.title}**"
             
@@ -409,3 +418,29 @@ class PlaybackFlow:
         except Exception as e:
             logger.error(f"[PLAYBACK] Stop failed: {e}")
             return False, f"{ERROR} Error: {str(e)}"
+
+    async def _announce_now_playing(self, player: PlayerInstance, song: Song):
+        """Announce the currently playing song in the Discord channel."""
+        if not player.last_text_channel_id:
+            return
+            
+        bot = get_bot()
+        if not bot:
+            return
+            
+        try:
+            channel = bot.get_channel(player.last_text_channel_id)
+            if not channel:
+                channel = await bot.fetch_channel(player.last_text_channel_id)
+            
+            if channel:
+                embed = create_now_playing_embed(
+                    title=song.title,
+                    artist=song.artist,
+                    duration=song.duration,
+                    requester=song.requester,
+                    thumbnail=getattr(song, 'thumbnail', None)
+                )
+                await channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"[PLAYBACK] Failed to announce song: {e}")

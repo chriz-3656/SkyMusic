@@ -123,6 +123,11 @@ class MusicCommands(commands.Cog):
             voice_channel = member.voice.channel
             guild_id = interaction.guild_id
             
+            # Store text channel for notifications
+            player = get_player(guild_id)
+            if player:
+                player.last_text_channel_id = interaction.channel_id
+            
             # Check if query is a playlist
             from player.playlist import PlaylistParser
             
